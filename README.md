@@ -61,6 +61,26 @@ flutter build web --release
 flutter run -d chrome
 ```
 
+### 認証設定（フェーズ1: プロトタイプ）
+
+現在のバージョンでは簡易パスワード認証を使用しています。
+
+**注意**: フェーズ3でGitHub OAuthに移行する予定です。
+
+#### パスワードの設定方法
+
+1. 新しいパスワードのハッシュを生成:
+```dart
+import 'package:jleague_watching_calendar/services/simple_auth_service.dart';
+
+void main() {
+  final hash = SimpleAuthService.generatePasswordHash('your_password');
+  print(hash);
+}
+```
+
+2. 生成されたハッシュを [lib/services/simple_auth_service.dart](lib/services/simple_auth_service.dart) の `_passwordHash` 定数に設定してください
+
 ## デプロイ
 
 GitHub Pagesへのデプロイは自動化されています。
