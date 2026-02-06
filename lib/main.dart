@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/simple_auth_service.dart';
 
-void main() {
+void main() async {
+  // 日本語ロケールの初期化
+  await initializeDateFormatting('ja_JP', null);
   runApp(const MyApp());
 }
 
@@ -84,7 +87,7 @@ class _AuthCheckState extends State<AuthCheck> {
             end: Alignment.bottomCenter,
             colors: [
               Theme.of(context).primaryColor,
-              Theme.of(context).primaryColor.withOpacity(0.8),
+              Theme.of(context).primaryColor.withValues(alpha: 0.8),
             ],
           ),
         ),
