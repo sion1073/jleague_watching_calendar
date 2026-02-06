@@ -8,6 +8,7 @@ import '../widgets/app_layout.dart';
 import '../widgets/match_calendar_widget.dart';
 import '../widgets/match_statistics_widget.dart';
 import 'login_screen.dart';
+import 'league_list_screen.dart';
 
 /// ホーム画面
 ///
@@ -103,9 +104,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onNavigationChanged(int index) {
     switch (index) {
       case 0:
-        // シーズン一覧画面への遷移（未実装）
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('シーズン一覧画面は次のフェーズで実装予定です')),
+        // シーズン一覧画面へ遷移
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const LeagueListScreen()),
         );
         break;
       case 1:
