@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/season.dart';
 import '../models/match_result.dart';
+import 'match_form_screen.dart';
 
 /// シーズン詳細画面
 ///
@@ -68,12 +69,16 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen> {
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: ElevatedButton.icon(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('予定登録機能は次のフェーズで実装予定です'),
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MatchFormScreen(season: widget.season),
                   ),
                 );
+                if (result == true && mounted) {
+                  setState(() {});
+                }
               },
               icon: const Icon(Icons.add),
               label: const Text('予定を追加'),
@@ -204,12 +209,19 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen> {
                 // 編集ボタン
                 IconButton(
                   icon: const Icon(Icons.edit, size: 20),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('編集機能は次のフェーズで実装予定です'),
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MatchFormScreen(
+                          season: widget.season,
+                          match: match,
+                        ),
                       ),
                     );
+                    if (result == true && mounted) {
+                      setState(() {});
+                    }
                   },
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),

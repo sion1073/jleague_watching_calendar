@@ -9,6 +9,7 @@ import '../widgets/match_calendar_widget.dart';
 import '../widgets/match_statistics_widget.dart';
 import 'login_screen.dart';
 import 'league_list_screen.dart';
+import 'match_form_screen.dart';
 
 /// ホーム画面
 ///
@@ -196,6 +197,55 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// デフォルトシーズンを取得または作成
+  Future<Season> _getOrCreateDefaultSeason() async {
+    final seasons = _seasonService.getAllSeasons();
+
+    // 既存のシーズンがあればそれを使用
+    if (seasons.isNotEmpty) {
+      // 最新年度のシーズンを返す
+      seasons.sort((a, b) => b.year.compareTo(a.year));
+      return seasons.first;
+    }
+
+    // シーズンがない場合、現在の年度のデフォルトシーズンを作成
+    final currentYear = DateTime.now().year;
+    final defaultSeason = Season(
+      name: '$currentYear' 'シーズン',
+      year: currentYear,
+      matches: [],
+    );
+
+    await _seasonService.addSeason(defaultSeason);
+    return defaultSeason;
+  }
+
+  /// 試合登録画面を開く
+  Future<void> _openMatchForm() async {
+    try {
+      final defaultSeason = await _getOrCreateDefaultSeason();
+      if (!mounted) return;
+
+      if (!context.mounted) return;
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MatchFormScreen(season: defaultSeason),
+        ),
+      );
+
+      if (result == true && mounted) {
+        _loadData();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('エラーが発生しました: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppLayout(
@@ -241,13 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('試合登録機能は次のフェーズで実装予定です'),
-                ),
-              );
-            },
+            onPressed: _openMatchForm,
             icon: const Icon(Icons.add),
             label: const Text('試合を登録する'),
           ),
