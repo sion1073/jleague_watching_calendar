@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import '../services/season_service.dart';
+import '../services/preferences_service.dart';
 import '../models/season.dart';
 import '../models/match_result.dart';
+import '../widgets/match_list_statistics_widget.dart';
 import 'match_form_screen.dart';
+import 'season_form_screen.dart';
 
 /// HOMEチーム詳細画面
 ///
@@ -23,6 +26,7 @@ class TeamDetailScreen extends StatefulWidget {
 
 class _TeamDetailScreenState extends State<TeamDetailScreen> {
   final _seasonService = SeasonService();
+  final _preferencesService = PreferencesService();
   bool _showDetails = false;
   bool _isLoading = true;
   List<_MatchWithSeason> _matches = [];
@@ -42,18 +46,25 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         await _seasonService.initialize();
       }
 
+      // 設定を読み込む
+      final includeStreaming = await _preferencesService.getIncludeStreaming();
+
       // 全シーズンを取得
       final seasons = _seasonService.getAllSeasons();
 
-      // 該当チームの試合を抽出
+      // 該当チームの試合を抽出（観戦タイプでフィルタリング）
       final List<_MatchWithSeason> matches = [];
       for (final season in seasons) {
         for (final match in season.matches) {
           if (match.homeTeam == widget.teamName) {
-            matches.add(_MatchWithSeason(
-              season: season,
-              match: match,
-            ));
+            // 配信視聴を含める設定がONの場合はすべて表示
+            // OFFの場合はスタジアム観戦のみ表示
+            if (includeStreaming || match.viewingType == ViewingType.stadium) {
+              matches.add(_MatchWithSeason(
+                season: season,
+                match: match,
+              ));
+            }
           }
         }
       }
@@ -153,6 +164,28 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       appBar: AppBar(
         title: Text(widget.teamName),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          // 日本代表の場合のみシーズン編集ボタンを表示
+          if (isJapanNationalTeam)
+            IconButton(
+              icon: const Icon(Icons.settings),
+              onPressed: () async {
+                final japanSeason = await _getOrCreateJapanSeason();
+                if (!context.mounted) return;
+
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SeasonFormScreen(season: japanSeason),
+                  ),
+                );
+                if (result == true && context.mounted) {
+                  _loadData();
+                }
+              },
+              tooltip: 'シーズン設定',
+            ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -214,6 +247,13 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 
                 const Divider(),
 
+                // 観戦統計
+                if (_matches.isNotEmpty)
+                  MatchListStatisticsWidget(
+                    matches: _matches.map((m) => m.match).toList(),
+                    title: '観戦統計（表示中の試合）',
+                  ),
+
                 // 試合一覧
                 Expanded(
                   child: _matches.isEmpty
@@ -271,17 +311,6 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             // 基本情報
             Row(
               children: [
-                // シーズン
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    '${season.year}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
                 // 日付
                 Expanded(
                   flex: 2,
@@ -372,7 +401,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        '得点者: ${match.goalScorers.map((s) => s.name).join(', ')}',
+                        '得点者: ${match.getSortedGoalScorers().map((s) => s.toDisplayString()).join(', ')}',
                         style: const TextStyle(fontSize: 12),
                       ),
                     ),

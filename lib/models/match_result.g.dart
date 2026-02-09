@@ -22,6 +22,7 @@ class MatchResultAdapter extends TypeAdapter<MatchResult> {
       awayTeam: fields[2] as String,
       score: fields[3] as String,
       outcomeIndex: fields[4] as int,
+      viewingTypeIndex: fields[7] as int,
       goalScorers: (fields[5] as List?)?.cast<GoalScorer>(),
       memo: fields[6] as String,
     );
@@ -30,7 +31,7 @@ class MatchResultAdapter extends TypeAdapter<MatchResult> {
   @override
   void write(BinaryWriter writer, MatchResult obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.matchDate)
       ..writeByte(1)
@@ -44,7 +45,9 @@ class MatchResultAdapter extends TypeAdapter<MatchResult> {
       ..writeByte(5)
       ..write(obj.goalScorers)
       ..writeByte(6)
-      ..write(obj.memo);
+      ..write(obj.memo)
+      ..writeByte(7)
+      ..write(obj.viewingTypeIndex);
   }
 
   @override

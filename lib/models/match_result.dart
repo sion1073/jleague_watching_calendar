@@ -11,6 +11,12 @@ enum MatchOutcome {
   tbd,    // 未定（試合前）
 }
 
+/// 観戦タイプ
+enum ViewingType {
+  stadium,  // スタジアム観戦
+  dazn,     // DAZN配信視聴
+}
+
 /// 試合結果
 @HiveType(typeId: 1)
 class MatchResult extends HiveObject {
@@ -42,12 +48,17 @@ class MatchResult extends HiveObject {
   @HiveField(6)
   String memo;
 
+  /// 観戦タイプ
+  @HiveField(7)
+  int viewingTypeIndex; // ViewingTypeのindexを保存
+
   MatchResult({
     required this.matchDate,
     required this.homeTeam,
     required this.awayTeam,
     this.score = '',
     this.outcomeIndex = 3, // デフォルトはtbd
+    this.viewingTypeIndex = 0, // デフォルトはstadium
     List<GoalScorer>? goalScorers,
     this.memo = '',
   }) : goalScorers = goalScorers ?? [];
@@ -60,6 +71,14 @@ class MatchResult extends HiveObject {
     outcomeIndex = value.index;
   }
 
+  /// 観戦タイプを取得
+  ViewingType get viewingType => ViewingType.values[viewingTypeIndex];
+
+  /// 観戦タイプを設定
+  set viewingType(ViewingType value) {
+    viewingTypeIndex = value.index;
+  }
+
   /// JSONからMatchResultを生成
   factory MatchResult.fromJson(Map<String, dynamic> json) {
     return MatchResult(
@@ -68,6 +87,7 @@ class MatchResult extends HiveObject {
       awayTeam: json['awayTeam'] as String,
       score: json['score'] as String? ?? '',
       outcomeIndex: _parseOutcome(json['outcome'] as String?),
+      viewingTypeIndex: _parseViewingType(json['viewingType'] as String?),
       goalScorers: (json['goalScorers'] as List<dynamic>?)
               ?.map((e) => GoalScorer.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -84,6 +104,7 @@ class MatchResult extends HiveObject {
       'awayTeam': awayTeam,
       'score': score,
       'outcome': outcome.name,
+      'viewingType': viewingType.name,
       'goalScorers': goalScorers.map((e) => e.toJson()).toList(),
       'memo': memo,
     };
@@ -104,11 +125,47 @@ class MatchResult extends HiveObject {
     }
   }
 
+  /// 観戦タイプ文字列をインデックスに変換
+  static int _parseViewingType(String? viewingType) {
+    if (viewingType == null) return ViewingType.stadium.index;
+    switch (viewingType.toLowerCase()) {
+      case 'stadium':
+        return ViewingType.stadium.index;
+      case 'dazn':
+        return ViewingType.dazn.index;
+      default:
+        return ViewingType.stadium.index;
+    }
+  }
+
   /// 試合が終了しているかどうか
   bool get isFinished => outcome != MatchOutcome.tbd;
 
   /// ホームチームが勝ったかどうか
   bool get isHomeWin => outcome == MatchOutcome.win;
+
+  /// 得点者を時間順にソートして取得
+  /// 得点時間が入力されているものを昇順で並べ、未入力のものを最後に配置
+  List<GoalScorer> getSortedGoalScorers() {
+    final scorers = List<GoalScorer>.from(goalScorers);
+    scorers.sort((a, b) {
+      // 両方とも得点時間がある場合は昇順
+      if (a.minuteScored != null && b.minuteScored != null) {
+        return a.minuteScored!.compareTo(b.minuteScored!);
+      }
+      // aのみ得点時間がある場合はaを先に
+      if (a.minuteScored != null) {
+        return -1;
+      }
+      // bのみ得点時間がある場合はbを先に
+      if (b.minuteScored != null) {
+        return 1;
+      }
+      // 両方とも得点時間がない場合は元の順序を維持
+      return 0;
+    });
+    return scorers;
+  }
 
   @override
   String toString() {

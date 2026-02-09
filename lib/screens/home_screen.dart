@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../services/simple_auth_service.dart';
 import '../services/season_service.dart';
+import '../services/preferences_service.dart';
 import '../models/season.dart';
 import '../models/match_result.dart';
 import '../widgets/app_layout.dart';
@@ -25,9 +26,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _seasonService = SeasonService();
+  final _preferencesService = PreferencesService();
   List<Season> _seasons = [];
   List<MatchResult> _allMatches = [];
   bool _isLoading = true;
+  bool _includeStreaming = false;
 
   @override
   void initState() {
@@ -44,18 +47,28 @@ class _HomeScreenState extends State<HomeScreen> {
         await _seasonService.initialize();
       }
 
+      // 設定を読み込む
+      final includeStreaming = await _preferencesService.getIncludeStreaming();
+
       // 全シーズンを取得
       final seasons = _seasonService.getAllSeasons();
 
-      // 全試合を取得
+      // 全試合を取得（観戦タイプでフィルタリング）
       final allMatches = <MatchResult>[];
       for (final season in seasons) {
-        allMatches.addAll(season.matches);
+        for (final match in season.matches) {
+          // 配信視聴を含める設定がONの場合はすべて表示
+          // OFFの場合はスタジアム観戦のみ表示
+          if (includeStreaming || match.viewingType == ViewingType.stadium) {
+            allMatches.add(match);
+          }
+        }
       }
 
       setState(() {
         _seasons = seasons;
         _allMatches = allMatches;
+        _includeStreaming = includeStreaming;
         _isLoading = false;
       });
     } catch (e) {
@@ -301,6 +314,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// 配信視聴を含める設定を変更
+  Future<void> _toggleIncludeStreaming(bool value) async {
+    await _preferencesService.setIncludeStreaming(value);
+    await _loadData();
+  }
+
   /// コンテンツを構築
   Widget _buildContent() {
     return RefreshIndicator(
@@ -330,6 +349,24 @@ class _HomeScreenState extends State<HomeScreen> {
           // 統計ウィジェット
           MatchStatisticsWidget(
             seasons: _seasons,
+            includeStreaming: _includeStreaming,
+          ),
+          const SizedBox(height: 8),
+          // 配信視聴を含める設定
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Card(
+              child: SwitchListTile(
+                title: const Text('配信視聴を含める'),
+                subtitle: const Text('DAZN視聴の試合も表示します'),
+                value: _includeStreaming,
+                onChanged: _toggleIncludeStreaming,
+                secondary: Icon(
+                  _includeStreaming ? Icons.tv : Icons.stadium,
+                  color: Theme.of(context).primaryColor,
+                ),
+              ),
+            ),
           ),
         ],
       ),
