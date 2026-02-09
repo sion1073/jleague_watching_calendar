@@ -10,6 +10,7 @@ import '../widgets/match_statistics_widget.dart';
 import 'login_screen.dart';
 import 'league_list_screen.dart';
 import 'match_form_screen.dart';
+import 'search_screen.dart';
 
 /// ホーム画面
 ///
@@ -114,9 +115,9 @@ class _HomeScreenState extends State<HomeScreen> {
         // ホーム（現在の画面）
         break;
       case 2:
-        // 検索画面への遷移（未実装）
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('検索画面は次のフェーズで実装予定です')),
+        // 検索画面への遷移
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const SearchScreen()),
         );
         break;
     }
@@ -311,6 +312,19 @@ class _HomeScreenState extends State<HomeScreen> {
           MatchCalendarWidget(
             matchResults: _allMatches,
             onDaySelected: _onDaySelected,
+          ),
+          const SizedBox(height: 16),
+          // 試合登録ボタン
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: ElevatedButton.icon(
+              onPressed: _openMatchForm,
+              icon: const Icon(Icons.add),
+              label: const Text('試合を登録する'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 48),
+              ),
+            ),
           ),
           const SizedBox(height: 16),
           // 統計ウィジェット

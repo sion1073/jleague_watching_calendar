@@ -9,6 +9,7 @@ import 'season_form_screen.dart';
 import 'team_detail_screen.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
+import 'search_screen.dart';
 
 /// シーズン一覧画面（リーグ一覧）
 ///
@@ -104,9 +105,9 @@ class _LeagueListScreenState extends State<LeagueListScreen> {
         );
         break;
       case 2:
-        // 検索画面への遷移（未実装）
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('検索画面は次のフェーズで実装予定です')),
+        // 検索画面への遷移
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const SearchScreen()),
         );
         break;
     }
