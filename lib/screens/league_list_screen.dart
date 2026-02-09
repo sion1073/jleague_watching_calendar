@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../services/simple_auth_service.dart';
 import '../services/season_service.dart';
+import '../services/preferences_service.dart';
 import '../models/season.dart';
+import '../models/match_result.dart';
 import '../widgets/app_layout.dart';
 import 'season_detail_screen.dart';
 import 'season_form_screen.dart';
@@ -23,8 +25,10 @@ class LeagueListScreen extends StatefulWidget {
 
 class _LeagueListScreenState extends State<LeagueListScreen> {
   final _seasonService = SeasonService();
+  final _preferencesService = PreferencesService();
   List<Season> _seasons = [];
   bool _isLoading = true;
+  bool _includeStreaming = false;
 
   @override
   void initState() {
@@ -41,11 +45,15 @@ class _LeagueListScreenState extends State<LeagueListScreen> {
         await _seasonService.initialize();
       }
 
+      // 設定を読み込む
+      final includeStreaming = await _preferencesService.getIncludeStreaming();
+
       // 全シーズンを取得
       final seasons = _seasonService.getSeasonsOrderedByYear(ascending: false);
 
       setState(() {
         _seasons = seasons;
+        _includeStreaming = includeStreaming;
         _isLoading = false;
       });
     } catch (e) {
@@ -222,7 +230,7 @@ class _LeagueListScreenState extends State<LeagueListScreen> {
                     season.name,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  subtitle: Text('${season.matches.length}試合'),
+                  subtitle: Text('${_getFilteredMatchCount(season)}試合'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -260,13 +268,25 @@ class _LeagueListScreenState extends State<LeagueListScreen> {
     );
   }
 
+  /// 観戦タイプでフィルタリングした試合数を取得
+  int _getFilteredMatchCount(Season season) {
+    if (_includeStreaming) {
+      return season.matches.length;
+    }
+    return season.matches.where((match) => match.viewingType == ViewingType.stadium).length;
+  }
+
   /// チームタブを構築
   Widget _buildTeamTab() {
-    // 全試合からHOMEチーム別に集計
+    // 全試合からHOMEチーム別に集計（観戦タイプでフィルタリング）
     final Map<String, int> teamMatchCounts = {};
     for (final season in _seasons) {
       for (final match in season.matches) {
-        teamMatchCounts[match.homeTeam] = (teamMatchCounts[match.homeTeam] ?? 0) + 1;
+        // 配信視聴を含める設定がONの場合はすべてカウント
+        // OFFの場合はスタジアム観戦のみカウント
+        if (_includeStreaming || match.viewingType == ViewingType.stadium) {
+          teamMatchCounts[match.homeTeam] = (teamMatchCounts[match.homeTeam] ?? 0) + 1;
+        }
       }
     }
 

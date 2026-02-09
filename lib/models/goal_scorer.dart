@@ -13,9 +13,14 @@ class GoalScorer extends HiveObject {
   @HiveField(1)
   String team;
 
+  /// 得点時間（分）※未入力の場合はnull
+  @HiveField(2)
+  int? minuteScored;
+
   GoalScorer({
     required this.name,
     required this.team,
+    this.minuteScored,
   });
 
   /// JSONからGoalScorerを生成
@@ -23,6 +28,7 @@ class GoalScorer extends HiveObject {
     return GoalScorer(
       name: json['name'] as String,
       team: json['team'] as String,
+      minuteScored: json['minuteScored'] as int?,
     );
   }
 
@@ -31,9 +37,18 @@ class GoalScorer extends HiveObject {
     return {
       'name': name,
       'team': team,
+      'minuteScored': minuteScored,
     };
   }
 
+  /// 得点者を文字列で表示（得点時間を含む）
+  String toDisplayString() {
+    if (minuteScored != null) {
+      return '$minuteScored\' $name ($team)';
+    }
+    return '$name ($team)';
+  }
+
   @override
-  String toString() => '$name ($team)';
+  String toString() => toDisplayString();
 }

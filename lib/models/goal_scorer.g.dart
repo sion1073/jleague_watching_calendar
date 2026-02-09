@@ -19,17 +19,20 @@ class GoalScorerAdapter extends TypeAdapter<GoalScorer> {
     return GoalScorer(
       name: fields[0] as String,
       team: fields[1] as String,
+      minuteScored: fields[2] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, GoalScorer obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(3)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
-      ..write(obj.team);
+      ..write(obj.team)
+      ..writeByte(2)
+      ..write(obj.minuteScored);
   }
 
   @override

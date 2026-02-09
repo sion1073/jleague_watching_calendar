@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/season.dart';
 import '../models/match_result.dart';
+import '../services/preferences_service.dart';
+import '../widgets/match_list_statistics_widget.dart';
 import 'match_form_screen.dart';
 
 /// シーズン詳細画面
@@ -20,7 +22,25 @@ class SeasonDetailScreen extends StatefulWidget {
 }
 
 class _SeasonDetailScreenState extends State<SeasonDetailScreen> {
+  final _preferencesService = PreferencesService();
   bool _showDetails = false;
+  bool _includeStreaming = false;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  /// 設定を読み込む
+  Future<void> _loadSettings() async {
+    final includeStreaming = await _preferencesService.getIncludeStreaming();
+    setState(() {
+      _includeStreaming = includeStreaming;
+      _isLoading = false;
+    });
+  }
 
   /// 試合結果を日本語テキストに変換
   String _getResultText(MatchOutcome? result) {
@@ -54,8 +74,20 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 試合を日付降順でソート
-    final matches = List<MatchResult>.from(widget.season.matches)
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(widget.season.name),
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // 試合を観戦タイプでフィルタリングして日付降順でソート
+    final matches = widget.season.matches.where((match) {
+      return _includeStreaming || match.viewingType == ViewingType.stadium;
+    }).toList()
       ..sort((a, b) => b.matchDate.compareTo(a.matchDate));
 
     return Scaffold(
@@ -116,6 +148,13 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen> {
           ),
 
           const Divider(),
+
+          // 観戦統計
+          if (matches.isNotEmpty)
+            MatchListStatisticsWidget(
+              matches: matches,
+              title: '観戦統計（表示中の試合）',
+            ),
 
           // 試合一覧
           Expanded(
@@ -261,7 +300,7 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen> {
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        '得点者: ${match.goalScorers.map((s) => s.name).join(', ')}',
+                        '得点者: ${match.getSortedGoalScorers().map((s) => s.toDisplayString()).join(', ')}',
                         style: const TextStyle(fontSize: 12),
                       ),
                     ),

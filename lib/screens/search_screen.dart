@@ -28,10 +28,14 @@ class _SearchScreenState extends State<SearchScreen> {
   String? _selectedHomeTeam;
   String? _selectedAwayTeam;
   MatchOutcome? _selectedOutcome;
+  ViewingType? _selectedViewingType;
 
   // 検索結果
   List<_SearchResultItem> _searchResults = [];
   bool _hasSearched = false;
+
+  // 検索エリアの開閉状態
+  bool _isSearchAreaExpanded = true;
 
   @override
   void dispose() {
@@ -100,6 +104,11 @@ class _SearchScreenState extends State<SearchScreen> {
       return false;
     }
 
+    // 観戦タイプフィルター
+    if (_selectedViewingType != null && match.viewingType != _selectedViewingType) {
+      return false;
+    }
+
     return true;
   }
 
@@ -140,6 +149,16 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
+  /// 観戦タイプを日本語テキストに変換
+  String _getViewingTypeLabel(ViewingType type) {
+    switch (type) {
+      case ViewingType.stadium:
+        return 'スタジアム観戦';
+      case ViewingType.dazn:
+        return 'DAZN配信';
+    }
+  }
+
   /// 勝敗に応じた色を取得
   Color _getResultColor(MatchOutcome? result) {
     switch (result) {
@@ -153,6 +172,64 @@ class _SearchScreenState extends State<SearchScreen> {
       default:
         return Colors.grey;
     }
+  }
+
+  /// 検索条件の簡易サマリーを構築
+  Widget _buildCompactSearchSummary() {
+    final conditions = <String>[];
+
+    // キーワード
+    if (_keywordController.text.isNotEmpty) {
+      conditions.add('キーワード: ${_keywordController.text}');
+    }
+
+    // シーズン
+    if (_selectedSeasonKey != null) {
+      final season = _seasonService.getAllSeasons().firstWhere(
+        (s) => s.key.toString() == _selectedSeasonKey,
+        orElse: () => _seasonService.getAllSeasons().first,
+      );
+      conditions.add('シーズン: ${season.name}');
+    }
+
+    // HOMEチーム
+    if (_selectedHomeTeam != null) {
+      conditions.add('HOME: $_selectedHomeTeam');
+    }
+
+    // 対戦相手
+    if (_selectedAwayTeam != null) {
+      conditions.add('vs $_selectedAwayTeam');
+    }
+
+    // 勝敗
+    if (_selectedOutcome != null) {
+      conditions.add('勝敗: ${_getResultText(_selectedOutcome)}');
+    }
+
+    // 観戦タイプ
+    if (_selectedViewingType != null) {
+      conditions.add('観戦: ${_getViewingTypeLabel(_selectedViewingType!)}');
+    }
+
+    if (conditions.isEmpty) {
+      return const Text(
+        '検索条件を設定してください',
+        style: TextStyle(
+          fontSize: 14,
+          color: Colors.grey,
+        ),
+      );
+    }
+
+    return Text(
+      conditions.join(' / '),
+      style: const TextStyle(
+        fontSize: 14,
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
   }
 
   /// ナビゲーション変更ハンドラー
@@ -190,7 +267,6 @@ class _SearchScreenState extends State<SearchScreen> {
       children: [
         // 検索フォーム
         Container(
-          padding: const EdgeInsets.all(16.0),
           decoration: BoxDecoration(
             color: Colors.grey[100],
             border: Border(
@@ -200,127 +276,204 @@ class _SearchScreenState extends State<SearchScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // キーワード検索
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _keywordController,
-                      decoration: const InputDecoration(
-                        labelText: 'キーワード',
-                        hintText: 'チーム名、メモなどで検索',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.search),
+              // 検索エリアの開閉ボタンと簡易表示
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _isSearchAreaExpanded = !_isSearchAreaExpanded;
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _isSearchAreaExpanded ? Icons.expand_less : Icons.expand_more,
+                        color: Theme.of(context).primaryColor,
                       ),
-                      onSubmitted: (_) => _performSearch(),
-                    ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _isSearchAreaExpanded
+                            ? const Text(
+                                '検索条件',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              )
+                            : _buildCompactSearchSummary(),
+                      ),
+                      Icon(
+                        Icons.tune,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: _performSearch,
-                    child: const Text('検索'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // シーズンフィルター
-              DropdownButtonFormField<String>(
-                initialValue: _selectedSeasonKey,
-                decoration: const InputDecoration(
-                  labelText: 'シーズン',
-                  border: OutlineInputBorder(),
                 ),
-                items: [
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('すべて'),
-                  ),
-                  ...seasons.map((season) => DropdownMenuItem(
-                        value: season.key.toString(),
-                        child: Text(season.name),
-                      )),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedSeasonKey = value;
-                  });
-                },
               ),
-              const SizedBox(height: 12),
 
-              // HOMEチームフィルター
-              DropdownButtonFormField<String>(
-                initialValue: _selectedHomeTeam,
-                decoration: const InputDecoration(
-                  labelText: 'HOMEチーム',
-                  border: OutlineInputBorder(),
-                ),
-                items: [
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('すべて'),
-                  ),
-                  ...homeTeams.map((team) => DropdownMenuItem(
-                        value: team,
-                        child: Text(team),
-                      )),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedHomeTeam = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 12),
+              // 詳細検索フォーム（開閉可能）
+              AnimatedCrossFade(
+                duration: const Duration(milliseconds: 300),
+                crossFadeState: _isSearchAreaExpanded
+                    ? CrossFadeState.showFirst
+                    : CrossFadeState.showSecond,
+                firstChild: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // キーワード検索
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _keywordController,
+                              decoration: const InputDecoration(
+                                labelText: 'キーワード',
+                                hintText: 'チーム名、メモなどで検索',
+                                border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.search),
+                              ),
+                              onSubmitted: (_) => _performSearch(),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: _performSearch,
+                            child: const Text('検索'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
 
-              // 対戦相手フィルター
-              DropdownButtonFormField<String>(
-                initialValue: _selectedAwayTeam,
-                decoration: const InputDecoration(
-                  labelText: '対戦相手',
-                  border: OutlineInputBorder(),
-                ),
-                items: [
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('すべて'),
-                  ),
-                  ...awayTeams.map((team) => DropdownMenuItem(
-                        value: team,
-                        child: Text(team),
-                      )),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedAwayTeam = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 12),
+                      // シーズンフィルター
+                      DropdownButtonFormField<String>(
+                        initialValue: _selectedSeasonKey,
+                        decoration: const InputDecoration(
+                          labelText: 'シーズン',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('すべて'),
+                          ),
+                          ...seasons.map((season) => DropdownMenuItem(
+                                value: season.key.toString(),
+                                child: Text(season.name),
+                              )),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedSeasonKey = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
 
-              // 勝敗フィルター
-              DropdownButtonFormField<MatchOutcome>(
-                initialValue: _selectedOutcome,
-                decoration: const InputDecoration(
-                  labelText: '勝敗',
-                  border: OutlineInputBorder(),
-                ),
-                items: [
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('すべて'),
+                      // HOMEチームフィルター
+                      DropdownButtonFormField<String>(
+                        initialValue: _selectedHomeTeam,
+                        decoration: const InputDecoration(
+                          labelText: 'HOMEチーム',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('すべて'),
+                          ),
+                          ...homeTeams.map((team) => DropdownMenuItem(
+                                value: team,
+                                child: Text(team),
+                              )),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedHomeTeam = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+
+                      // 対戦相手フィルター
+                      DropdownButtonFormField<String>(
+                        initialValue: _selectedAwayTeam,
+                        decoration: const InputDecoration(
+                          labelText: '対戦相手',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('すべて'),
+                          ),
+                          ...awayTeams.map((team) => DropdownMenuItem(
+                                value: team,
+                                child: Text(team),
+                              )),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedAwayTeam = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+
+                      // 勝敗フィルター
+                      DropdownButtonFormField<MatchOutcome>(
+                        initialValue: _selectedOutcome,
+                        decoration: const InputDecoration(
+                          labelText: '勝敗',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('すべて'),
+                          ),
+                          ...MatchOutcome.values.map((outcome) => DropdownMenuItem(
+                                value: outcome,
+                                child: Text(_getResultText(outcome)),
+                              )),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedOutcome = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+
+                      // 観戦タイプフィルター
+                      DropdownButtonFormField<ViewingType>(
+                        initialValue: _selectedViewingType,
+                        decoration: const InputDecoration(
+                          labelText: '観戦タイプ',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('すべて'),
+                          ),
+                          ...ViewingType.values.map((type) => DropdownMenuItem(
+                                value: type,
+                                child: Text(_getViewingTypeLabel(type)),
+                              )),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedViewingType = value;
+                          });
+                        },
+                      ),
+                    ],
                   ),
-                  ...MatchOutcome.values.map((outcome) => DropdownMenuItem(
-                        value: outcome,
-                        child: Text(_getResultText(outcome)),
-                      )),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedOutcome = value;
-                  });
-                },
+                ),
+                secondChild: const SizedBox.shrink(),
               ),
             ],
           ),
@@ -452,7 +605,7 @@ class _SearchScreenState extends State<SearchScreen> {
               if (result.match.goalScorers.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
-                  '得点者: ${result.match.goalScorers.map((g) => g.name).join(', ')}',
+                  '得点者: ${result.match.getSortedGoalScorers().map((g) => g.toDisplayString()).join(', ')}',
                   style: const TextStyle(fontSize: 14, color: Colors.blue),
                 ),
               ],

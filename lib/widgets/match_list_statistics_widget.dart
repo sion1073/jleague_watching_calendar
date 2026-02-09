@@ -1,54 +1,36 @@
 import 'package:flutter/material.dart';
-import '../models/season.dart';
 import '../models/match_result.dart';
 
-/// 観戦統計情報を表示するウィジェット
+/// 試合リストからの観戦統計情報を表示するウィジェット
 ///
-/// 全シーズンを通した観戦数、勝利数、敗戦数、引き分け数を表示
-class MatchStatisticsWidget extends StatelessWidget {
-  /// 統計を計算する対象のシーズンリスト
-  final List<Season> seasons;
+/// 指定された試合リストの統計を計算して表示します。
+/// ホーム試合用とアウェイ試合用の統計を分けて表示できます。
+class MatchListStatisticsWidget extends StatelessWidget {
+  /// 統計を計算する対象の試合リスト
+  final List<MatchResult> matches;
 
-  /// 配信視聴を含めるかどうか
-  final bool includeStreaming;
+  /// ホーム試合の統計のみを表示するか
+  final bool showHomeOnly;
 
-  const MatchStatisticsWidget({
+  /// タイトルテキスト（省略可能）
+  final String? title;
+
+  const MatchListStatisticsWidget({
     super.key,
-    required this.seasons,
-    required this.includeStreaming,
+    required this.matches,
+    this.showHomeOnly = false,
+    this.title,
   });
 
-  /// 全シーズンの統計を計算（観戦タイプでフィルタリング）
-  Map<String, int> _calculateTotalStatistics() {
-    int totalMatches = 0;
-    int totalWins = 0;
-    int totalLosses = 0;
-    int totalDraws = 0;
+  /// 試合リストの統計を計算
+  Map<String, int> _calculateStatistics() {
+    // 終了した試合のみを対象にする
+    final finishedMatches = matches.where((m) => m.isFinished).toList();
 
-    for (final season in seasons) {
-      for (final match in season.matches) {
-        // 配信視聴を含める設定がONの場合はすべてカウント
-        // OFFの場合はスタジアム観戦のみカウント
-        if (includeStreaming || match.viewingType == ViewingType.stadium) {
-          if (match.isFinished) {
-            totalMatches++;
-            switch (match.outcome) {
-              case MatchOutcome.win:
-                totalWins++;
-                break;
-              case MatchOutcome.lose:
-                totalLosses++;
-                break;
-              case MatchOutcome.draw:
-                totalDraws++;
-                break;
-              default:
-                break;
-            }
-          }
-        }
-      }
-    }
+    int totalMatches = finishedMatches.length;
+    int totalWins = finishedMatches.where((m) => m.outcome == MatchOutcome.win).length;
+    int totalLosses = finishedMatches.where((m) => m.outcome == MatchOutcome.lose).length;
+    int totalDraws = finishedMatches.where((m) => m.outcome == MatchOutcome.draw).length;
 
     return {
       'totalMatches': totalMatches,
@@ -60,7 +42,7 @@ class MatchStatisticsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final stats = _calculateTotalStatistics();
+    final stats = _calculateStatistics();
     final totalMatches = stats['totalMatches'] ?? 0;
     final wins = stats['wins'] ?? 0;
     final losses = stats['losses'] ?? 0;
@@ -85,7 +67,7 @@ class MatchStatisticsWidget extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '観戦統計',
+                  title ?? '観戦統計',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
