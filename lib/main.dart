@@ -1,12 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'models/season.dart';
+import 'models/match_result.dart';
+import 'models/goal_scorer.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/simple_auth_service.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Hiveの初期化
+  await Hive.initFlutter();
+
+  // Hiveアダプターの登録
+  Hive.registerAdapter(SeasonAdapter());
+  Hive.registerAdapter(MatchResultAdapter());
+  Hive.registerAdapter(GoalScorerAdapter());
+
   // 日本語ロケールの初期化
   await initializeDateFormatting('ja_JP', null);
+
   runApp(const MyApp());
 }
 

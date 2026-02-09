@@ -5,6 +5,7 @@ import '../services/season_service.dart';
 import '../models/season.dart';
 import '../widgets/app_layout.dart';
 import 'season_detail_screen.dart';
+import 'season_form_screen.dart';
 import 'team_detail_screen.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
@@ -154,6 +155,20 @@ class _LeagueListScreenState extends State<LeagueListScreen> {
     );
   }
 
+  /// シーズン追加画面を開く
+  Future<void> _openSeasonForm({Season? season}) async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (context) => SeasonFormScreen(season: season),
+      ),
+    );
+
+    // 保存/削除された場合はリロード
+    if (result == true) {
+      await _loadData();
+    }
+  }
+
   /// シーズンタブを構築
   Widget _buildSeasonTab() {
     // 日本代表を除外
@@ -176,40 +191,71 @@ class _LeagueListScreenState extends State<LeagueListScreen> {
                     color: Colors.grey.shade600,
                   ),
             ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () => _openSeasonForm(),
+              icon: const Icon(Icons.add),
+              label: const Text('シーズンを追加'),
+            ),
           ],
         ),
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: _loadData,
-      child: ListView.builder(
-        itemCount: seasonsWithoutJapan.length,
-        itemBuilder: (context, index) {
-          final season = seasonsWithoutJapan[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-            child: ListTile(
-              leading: CircleAvatar(
-                child: Text('${season.year}'),
-              ),
-              title: Text(
-                season.name,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: Text('${season.matches.length}試合'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => SeasonDetailScreen(season: season),
+    return Stack(
+      children: [
+        RefreshIndicator(
+          onRefresh: _loadData,
+          child: ListView.builder(
+            itemCount: seasonsWithoutJapan.length,
+            padding: const EdgeInsets.only(bottom: 80),
+            itemBuilder: (context, index) {
+              final season = seasonsWithoutJapan[index];
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    child: Text('${season.year}'),
                   ),
-                );
-              },
-            ),
-          );
-        },
-      ),
+                  title: Text(
+                    season.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text('${season.matches.length}試合'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit, size: 20),
+                        tooltip: '編集',
+                        onPressed: () => _openSeasonForm(season: season),
+                      ),
+                      const Icon(Icons.chevron_right),
+                    ],
+                  ),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => SeasonDetailScreen(season: season),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+        // フローティングアクションボタン（シーズン追加）
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: FloatingActionButton(
+            onPressed: () => _openSeasonForm(),
+            tooltip: 'シーズンを追加',
+            child: const Icon(Icons.add),
+          ),
+        ),
+      ],
     );
   }
 
