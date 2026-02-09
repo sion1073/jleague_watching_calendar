@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../services/season_service.dart';
 import '../models/season.dart';
 import '../models/match_result.dart';
+import 'match_form_screen.dart';
 
 /// HOMEチーム詳細画面
 ///
@@ -76,6 +77,28 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     }
   }
 
+  /// 日本代表用のシーズンを取得または作成
+  Future<Season> _getOrCreateJapanSeason() async {
+    final seasons = _seasonService.getAllSeasons();
+
+    // 既存の日本代表シーズンを検索
+    for (final season in seasons) {
+      if (season.name == '日本代表') {
+        return season;
+      }
+    }
+
+    // 存在しない場合は新規作成
+    final japanSeason = Season(
+      name: '日本代表',
+      year: 9999, // 特別な年度番号
+      matches: [],
+    );
+
+    await _seasonService.addSeason(japanSeason);
+    return japanSeason;
+  }
+
   /// 試合結果を日本語テキストに変換
   String _getResultText(MatchOutcome? result) {
     switch (result) {
@@ -140,12 +163,19 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: ElevatedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('予定登録機能は次のフェーズで実装予定です'),
+                      onPressed: () async {
+                        final japanSeason = await _getOrCreateJapanSeason();
+                        if (!context.mounted) return;
+
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MatchFormScreen(season: japanSeason),
                           ),
                         );
+                        if (result == true && context.mounted) {
+                          _loadData();
+                        }
                       },
                       icon: const Icon(Icons.add),
                       label: const Text('予定を追加'),
@@ -289,12 +319,19 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                 // 編集ボタン
                 IconButton(
                   icon: const Icon(Icons.edit, size: 20),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('編集機能は次のフェーズで実装予定です'),
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MatchFormScreen(
+                          season: season,
+                          match: match,
+                        ),
                       ),
                     );
+                    if (result == true && mounted) {
+                      _loadData();
+                    }
                   },
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
