@@ -75,9 +75,11 @@ class _SearchScreenState extends State<SearchScreen> {
 
   /// 試合がフィルター条件に一致するかチェック
   bool _matchesFilters(Season season, MatchResult match, String keyword) {
-    // キーワード検索（チーム名、メモ、スコア）
+    // キーワード検索（チーム名、メモ、スコア、得点者名）
     if (keyword.isNotEmpty) {
-      final matchText = '${match.homeTeam} ${match.awayTeam} ${match.memo} ${match.score}'
+      // 得点者名を連結
+      final goalScorerNames = match.goalScorers.map((g) => g.name).join(' ');
+      final matchText = '${match.homeTeam} ${match.awayTeam} ${match.memo} ${match.score} $goalScorerNames'
           .toLowerCase();
       if (!matchText.contains(keyword)) {
         return false;
