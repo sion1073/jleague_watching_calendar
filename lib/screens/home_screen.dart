@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import '../services/simple_auth_service.dart';
 import '../services/season_service.dart';
 import '../services/preferences_service.dart';
 import '../models/season.dart';
@@ -8,7 +7,6 @@ import '../models/match_result.dart';
 import '../widgets/app_layout.dart';
 import '../widgets/match_calendar_widget.dart';
 import '../widgets/match_statistics_widget.dart';
-import 'login_screen.dart';
 import 'league_list_screen.dart';
 import 'match_form_screen.dart';
 import 'search_screen.dart';
@@ -78,38 +76,6 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('データの読み込みに失敗しました: $e')),
-        );
-      }
-    }
-  }
-
-  /// ログアウト処理
-  Future<void> _handleLogout() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('ログアウト'),
-        content: const Text('ログアウトしますか?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('ログアウト'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && mounted) {
-      final authService = SimpleAuthService();
-      await authService.logout();
-
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
         );
       }
     }
@@ -265,13 +231,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return AppLayout(
       currentIndex: 1, // ホーム
       onNavigationChanged: _onNavigationChanged,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.logout),
-          tooltip: 'ログアウト',
-          onPressed: _handleLogout,
-        ),
-      ],
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _seasons.isEmpty
@@ -314,12 +273,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// 配信視聴を含める設定を変更
-  Future<void> _toggleIncludeStreaming(bool value) async {
-    await _preferencesService.setIncludeStreaming(value);
-    await _loadData();
-  }
-
   /// コンテンツを構築
   Widget _buildContent() {
     return RefreshIndicator(
@@ -350,23 +303,6 @@ class _HomeScreenState extends State<HomeScreen> {
           MatchStatisticsWidget(
             seasons: _seasons,
             includeStreaming: _includeStreaming,
-          ),
-          const SizedBox(height: 8),
-          // 配信視聴を含める設定
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Card(
-              child: SwitchListTile(
-                title: const Text('配信視聴を含める'),
-                subtitle: const Text('DAZN視聴の試合も表示します'),
-                value: _includeStreaming,
-                onChanged: _toggleIncludeStreaming,
-                secondary: Icon(
-                  _includeStreaming ? Icons.tv : Icons.stadium,
-                  color: Theme.of(context).primaryColor,
-                ),
-              ),
-            ),
           ),
         ],
       ),

@@ -4,6 +4,7 @@ import '../models/season.dart';
 import '../models/match_result.dart';
 import '../services/preferences_service.dart';
 import '../widgets/match_list_statistics_widget.dart';
+import '../widgets/app_drawer.dart';
 import 'match_form_screen.dart';
 
 /// シーズン詳細画面
@@ -80,6 +81,7 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen> {
           title: Text(widget.season.name),
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         ),
+        endDrawer: const AppDrawer(),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -95,6 +97,7 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen> {
         title: Text(widget.season.name),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
+      endDrawer: const AppDrawer(),
       body: Column(
         children: [
           // 予定を追加ボタン

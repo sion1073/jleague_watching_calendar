@@ -5,6 +5,7 @@ import '../models/season.dart';
 import '../models/match_result.dart';
 import '../models/goal_scorer.dart';
 import '../services/season_service.dart';
+import '../services/preferences_service.dart';
 import '../constants/team_constants.dart';
 
 /// 予定登録・編集画面
@@ -27,6 +28,7 @@ class MatchFormScreen extends StatefulWidget {
 class _MatchFormScreenState extends State<MatchFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _seasonService = SeasonService();
+  final _preferencesService = PreferencesService();
 
   // コントローラー
   late TextEditingController _dateController;
@@ -41,6 +43,7 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
   late ViewingType _selectedViewingType;
   late List<GoalScorer> _goalScorers;
   List<Season> _availableSeasons = [];
+  List<String> _availableHomeTeams = [];
 
   // チーム選択
   String? _selectedHomeTeam;
@@ -61,20 +64,6 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
     _selectedViewingType = widget.match?.viewingType ?? ViewingType.stadium;
     _goalScorers = widget.match?.goalScorers.toList() ?? [];
 
-    // チーム選択の初期値
-    final homeTeam = widget.match?.homeTeam;
-    final awayTeam = widget.match?.awayTeam;
-
-    // HOMEチームの初期値（リストに存在する場合のみ設定）
-    if (homeTeam != null && homeTeams.contains(homeTeam)) {
-      _selectedHomeTeam = homeTeam;
-    }
-
-    // 対戦相手の初期値（リストに存在する場合のみ設定）
-    if (awayTeam != null && allOpponentTeams.contains(awayTeam)) {
-      _selectedAwayTeam = awayTeam;
-    }
-
     // コントローラーの初期化
     final dateFormatter = DateFormat('yyyy/MM/dd');
     _dateController = TextEditingController(text: dateFormatter.format(_selectedDate));
@@ -86,8 +75,8 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
 
     _memoController = TextEditingController(text: widget.match?.memo ?? '');
 
-    // 利用可能なシーズンを取得
-    _loadSeasons();
+    // 利用可能なシーズンとHOMEチームを取得
+    _loadSettings();
   }
 
   @override
@@ -99,17 +88,38 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
     super.dispose();
   }
 
-  /// シーズンを読み込む
-  Future<void> _loadSeasons() async {
+  /// シーズンとHOMEチーム設定を読み込む
+  Future<void> _loadSettings() async {
     try {
       final seasons = _seasonService.getSeasonsOrderedByYear(ascending: false);
+      final homeTeams = await _preferencesService.getHomeTeams();
+
+      // チーム選択の初期値
+      final homeTeam = widget.match?.homeTeam;
+      final awayTeam = widget.match?.awayTeam;
+
+      // HOMEチームの初期値（リストに存在する場合のみ設定）
+      String? selectedHomeTeam;
+      if (homeTeam != null && homeTeams.contains(homeTeam)) {
+        selectedHomeTeam = homeTeam;
+      }
+
+      // 対戦相手の初期値（リストに存在する場合のみ設定）
+      String? selectedAwayTeam;
+      if (awayTeam != null && allOpponentTeams.contains(awayTeam)) {
+        selectedAwayTeam = awayTeam;
+      }
+
       setState(() {
         _availableSeasons = seasons;
+        _availableHomeTeams = homeTeams;
+        _selectedHomeTeam = selectedHomeTeam;
+        _selectedAwayTeam = selectedAwayTeam;
       });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('シーズンの読み込みに失敗しました: $e')),
+          SnackBar(content: Text('設定の読み込みに失敗しました: $e')),
         );
       }
     }
@@ -485,23 +495,36 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
 
             // HOMEチーム
             DropdownButtonFormField<String>(
-              initialValue: _selectedHomeTeam,
+              value: _selectedHomeTeam,
               decoration: const InputDecoration(
                 labelText: 'HOMEチーム',
                 border: OutlineInputBorder(),
+                helperText: '設定画面でHOMEチームを選択できます',
               ),
-              items: homeTeams.map((team) {
-                return DropdownMenuItem(
-                  value: team,
-                  child: Text(team),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedHomeTeam = value;
-                });
-              },
+              items: _availableHomeTeams.isEmpty
+                  ? [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('HOMEチームが設定されていません'),
+                      ),
+                    ]
+                  : _availableHomeTeams.map((team) {
+                      return DropdownMenuItem(
+                        value: team,
+                        child: Text(team),
+                      );
+                    }).toList(),
+              onChanged: _availableHomeTeams.isEmpty
+                  ? null
+                  : (value) {
+                      setState(() {
+                        _selectedHomeTeam = value;
+                      });
+                    },
               validator: (value) {
+                if (_availableHomeTeams.isEmpty) {
+                  return '設定画面でHOMEチームを選択してください';
+                }
                 if (value == null || value.isEmpty) {
                   return 'HOMEチームを選択してください';
                 }

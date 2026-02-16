@@ -6,6 +6,7 @@ import '../services/preferences_service.dart';
 import '../models/season.dart';
 import '../models/match_result.dart';
 import '../widgets/match_list_statistics_widget.dart';
+import '../widgets/app_drawer.dart';
 import 'match_form_screen.dart';
 import 'season_form_screen.dart';
 
@@ -187,6 +188,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             ),
         ],
       ),
+      endDrawer: const AppDrawer(),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(

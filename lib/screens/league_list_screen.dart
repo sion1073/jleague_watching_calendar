@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import '../services/simple_auth_service.dart';
 import '../services/season_service.dart';
 import '../services/preferences_service.dart';
 import '../models/season.dart';
@@ -10,7 +9,6 @@ import 'season_detail_screen.dart';
 import 'season_form_screen.dart';
 import 'team_detail_screen.dart';
 import 'home_screen.dart';
-import 'login_screen.dart';
 import 'search_screen.dart';
 
 /// シーズン一覧画面（リーグ一覧）
@@ -68,38 +66,6 @@ class _LeagueListScreenState extends State<LeagueListScreen> {
     }
   }
 
-  /// ログアウト処理
-  Future<void> _handleLogout() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('ログアウト'),
-        content: const Text('ログアウトしますか?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('ログアウト'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && mounted) {
-      final authService = SimpleAuthService();
-      await authService.logout();
-
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
-      }
-    }
-  }
-
   /// ナビゲーション変更ハンドラー
   void _onNavigationChanged(int index) {
     switch (index) {
@@ -128,13 +94,6 @@ class _LeagueListScreenState extends State<LeagueListScreen> {
       child: AppLayout(
         currentIndex: 0, // シーズン一覧
         onNavigationChanged: _onNavigationChanged,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'ログアウト',
-            onPressed: _handleLogout,
-          ),
-        ],
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : Column(

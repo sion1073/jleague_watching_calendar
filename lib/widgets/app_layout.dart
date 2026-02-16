@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_drawer.dart';
 
 /// 全画面共通レイアウト
 ///
@@ -42,6 +43,7 @@ class AppLayout extends StatelessWidget {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: actions,
       ),
+      endDrawer: const AppDrawer(),
       body: body,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
