@@ -311,6 +311,17 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             // 基本情報
             Row(
               children: [
+                // 観戦タイプアイコン
+                Icon(
+                  match.viewingType == ViewingType.stadium
+                      ? Icons.stadium
+                      : Icons.tv,
+                  size: 16,
+                  color: match.viewingType == ViewingType.stadium
+                      ? Colors.blue
+                      : Colors.purple,
+                ),
+                const SizedBox(width: 8),
                 // 日付
                 Expanded(
                   flex: 2,

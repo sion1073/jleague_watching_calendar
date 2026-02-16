@@ -369,12 +369,66 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
     Navigator.pop(context, false);
   }
 
+  /// 試合を削除
+  Future<void> _deleteMatch() async {
+    if (!_isEditMode || widget.match == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('試合記録を削除'),
+        content: Text(
+          '「${widget.match!.homeTeam} vs ${widget.match!.awayTeam}」の試合記録を削除しますか？',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('削除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        // シーズンから試合を削除
+        widget.season.removeMatch(widget.match!);
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('試合記録を削除しました')),
+        );
+        Navigator.of(context).pop(true); // 削除成功を通知
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('削除に失敗しました: $e')),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditMode ? '試合を編集' : '予定を登録'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: _isEditMode
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  tooltip: '削除',
+                  onPressed: _deleteMatch,
+                ),
+              ]
+            : null,
       ),
       body: Form(
         key: _formKey,
