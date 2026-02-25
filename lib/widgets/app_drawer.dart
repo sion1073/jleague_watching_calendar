@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../screens/login_screen.dart';
 import '../screens/settings_screen.dart';
+import '../services/export_service.dart';
 import '../services/simple_auth_service.dart';
 
 /// アプリケーション共通のドロワーメニュー
@@ -46,15 +47,7 @@ class AppDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.file_upload),
             title: const Text('データエクスポート'),
-            subtitle: const Text('未実装'),
-            enabled: false,
-            onTap: () {
-              Navigator.pop(context);
-              // TODO: エクスポート機能の実装
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('データエクスポート機能は未実装です')),
-              );
-            },
+            onTap: () => _handleExport(context),
           ),
           ListTile(
             leading: const Icon(Icons.file_download),
@@ -91,6 +84,26 @@ class AppDrawer extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// データエクスポート処理
+  Future<void> _handleExport(BuildContext context) async {
+    Navigator.pop(context);
+    try {
+      final exportService = ExportService();
+      await exportService.exportToJson();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('データをエクスポートしました')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('エクスポートに失敗しました: $e')),
+        );
+      }
+    }
   }
 
   /// ログアウト処理
