@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dart:convert' show JsonEncoder;
 import 'dart:js_interop';
 import 'package:web/web.dart' as web;
 import 'season_service.dart';
@@ -31,10 +31,8 @@ class ExportService {
         '${now.second.toString().padLeft(2, '0')}';
     final fileName = 'jleague_data_$timestamp.json';
 
-    final bytes = utf8.encode(jsonString);
-    final jsArray = bytes.map((b) => b.toJS).toList().toJS;
     final blob = web.Blob(
-      jsArray,
+      [jsonString.toJS].toJS,
       web.BlobPropertyBag(type: 'application/json'),
     );
     final url = web.URL.createObjectURL(blob);
