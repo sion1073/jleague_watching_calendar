@@ -28,6 +28,7 @@ class TeamDetailScreen extends StatefulWidget {
 class _TeamDetailScreenState extends State<TeamDetailScreen> {
   final _seasonService = SeasonService();
   bool _showDetails = false;
+  bool _showStatistics = false;
   bool _isLoading = true;
 
   /// 全シーズンの試合データ（フィルタ前）
@@ -222,6 +223,45 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                     ),
                   ),
 
+                // 観戦統計トグル
+                if (matches.isNotEmpty) ...[
+                  InkWell(
+                    onTap: () {
+                      setState(() {
+                        _showStatistics = !_showStatistics;
+                      });
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.bar_chart,
+                            size: 18,
+                            color: Theme.of(context).primaryColor,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            '観戦統計',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const Spacer(),
+                          Icon(
+                            _showStatistics ? Icons.expand_less : Icons.expand_more,
+                            color: Theme.of(context).primaryColor,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (_showStatistics)
+                    MatchListStatisticsWidget(
+                      matches: matches.map((m) => m.match).toList(),
+                      title: '観戦統計（表示中の試合）',
+                    ),
+                  const Divider(height: 1),
+                ],
+
                 // 詳細情報表示トグルボタン
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -249,14 +289,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                   ),
                 ),
 
-                const Divider(),
-
-                // 観戦統計
-                if (matches.isNotEmpty)
-                  MatchListStatisticsWidget(
-                    matches: matches.map((m) => m.match).toList(),
-                    title: '観戦統計（表示中の試合）',
-                  ),
+                const Divider(height: 1),
 
                 // 試合一覧
                 Expanded(
