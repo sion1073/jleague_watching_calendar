@@ -24,6 +24,7 @@ class SeasonDetailScreen extends StatefulWidget {
 
 class _SeasonDetailScreenState extends State<SeasonDetailScreen> {
   bool _showDetails = false;
+  bool _showStatistics = false;
 
   /// 試合結果を日本語テキストに変換
   String _getResultText(MatchOutcome? result) {
@@ -101,6 +102,45 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen> {
             ),
           ),
 
+          // 観戦統計トグル
+          if (matches.isNotEmpty) ...[
+            InkWell(
+              onTap: () {
+                setState(() {
+                  _showStatistics = !_showStatistics;
+                });
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.bar_chart,
+                      size: 18,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      '観戦統計',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      _showStatistics ? Icons.expand_less : Icons.expand_more,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (_showStatistics)
+              MatchListStatisticsWidget(
+                matches: matches,
+                title: '観戦統計（表示中の試合）',
+              ),
+            const Divider(height: 1),
+          ],
+
           // 詳細情報表示トグルボタン
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -128,14 +168,7 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen> {
             ),
           ),
 
-          const Divider(),
-
-          // 観戦統計
-          if (matches.isNotEmpty)
-            MatchListStatisticsWidget(
-              matches: matches,
-              title: '観戦統計（表示中の試合）',
-            ),
+          const Divider(height: 1),
 
           // 試合一覧
           Expanded(
