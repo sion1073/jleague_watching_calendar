@@ -6,6 +6,7 @@ import '../models/match_result.dart';
 import '../models/goal_scorer.dart';
 import '../services/season_service.dart';
 import '../services/preferences_service.dart';
+import '../services/app_settings.dart';
 import '../constants/team_constants.dart';
 
 /// 予定登録・編集画面
@@ -153,26 +154,37 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
     }
   }
 
+  /// 選択リーグに基づいて対戦相手チームリストを生成
+  List<String> _getAvailableAwayTeams(List<String> selectedLeagues) {
+    final teams = <String>{};
+    if (selectedLeagues.contains('j1')) teams.addAll(j1Teams);
+    if (selectedLeagues.contains('j2')) teams.addAll(j2Teams);
+    if (selectedLeagues.contains('j3')) teams.addAll(j3Teams);
+    // その他は常に含める
+    teams.add('その他');
+    final sorted = teams.toList()..sort();
+    return sorted;
+  }
+
   /// 得点者のチーム選択肢を取得
   /// HOMEチームと対戦相手が両方選択されている場合はその2つのみ、
-  /// そうでない場合は全チームから選択できるようにする
-  List<String> _getGoalScorerTeamOptions() {
+  /// そうでない場合は引数のチームリストから選択できるようにする
+  List<String> _getGoalScorerTeamOptions(List<String> availableTeams) {
     if (_selectedHomeTeam != null && _selectedAwayTeam != null) {
       // 両方選択されている場合はその2つのみ
       return [_selectedHomeTeam!, _selectedAwayTeam!];
     }
-    // 未選択の場合は全チームリスト
-    return allOpponentTeams;
+    return availableTeams;
   }
 
   /// 得点者を追加するダイアログを表示
-  Future<void> _showAddGoalScorerDialog() async {
+  Future<void> _showAddGoalScorerDialog(List<String> availableAwayTeams) async {
     final nameController = TextEditingController();
     final minuteController = TextEditingController();
     String? selectedTeam;
 
     // 得点者のチーム選択肢を取得
-    final teamOptions = _getGoalScorerTeamOptions();
+    final teamOptions = _getGoalScorerTeamOptions(availableAwayTeams);
 
     final result = await showDialog<bool>(
       context: context,
@@ -426,6 +438,15 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = AppSettings.of(context);
+    final availableAwayTeams = _getAvailableAwayTeams(settings.selectedLeagues);
+
+    // 編集時: 保存済みの対戦相手がフィルタ後のリストに含まれない場合は含めておく
+    final awayTeamsForDropdown = (_selectedAwayTeam != null &&
+            !availableAwayTeams.contains(_selectedAwayTeam))
+        ? ([_selectedAwayTeam!, ...availableAwayTeams]..sort())
+        : availableAwayTeams;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditMode ? '試合を編集' : '予定を登録'),
@@ -539,8 +560,9 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
               decoration: const InputDecoration(
                 labelText: '対戦相手',
                 border: OutlineInputBorder(),
+                helperText: '設定画面でリーグを絞り込めます',
               ),
-              items: allOpponentTeams.map((team) {
+              items: awayTeamsForDropdown.map((team) {
                 return DropdownMenuItem(
                   value: team,
                   child: Text(team),
@@ -681,7 +703,7 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
                       }),
                     const SizedBox(height: 8),
                     OutlinedButton.icon(
-                      onPressed: _showAddGoalScorerDialog,
+                      onPressed: () => _showAddGoalScorerDialog(awayTeamsForDropdown),
                       icon: const Icon(Icons.add),
                       label: const Text('得点者を追加'),
                       style: OutlinedButton.styleFrom(

@@ -246,6 +246,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                       ],
+                      const Divider(height: 1),
+                      // アウェイチームのリーグ選択
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0,
+                          vertical: 8.0,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: Icon(Icons.groups),
+                              title: Text('対戦相手のリーグ'),
+                              subtitle: Text('予定登録時に選択できるアウェイチームのリーグ'),
+                            ),
+                            ...[
+                              ('j1', 'J1リーグ'),
+                              ('j2', 'J2リーグ'),
+                              ('j3', 'J3リーグ'),
+                            ].map((entry) {
+                              final leagueKey = entry.$1;
+                              final leagueLabel = entry.$2;
+                              final isSelected = settings.selectedLeagues.contains(leagueKey);
+                              return CheckboxListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(leagueLabel),
+                                value: isSelected,
+                                onChanged: (checked) {
+                                  final updated = List<String>.from(settings.selectedLeagues);
+                                  if (checked == true) {
+                                    updated.add(leagueKey);
+                                  } else {
+                                    updated.remove(leagueKey);
+                                  }
+                                  settings.setSelectedLeagues(updated);
+                                },
+                              );
+                            }),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -257,7 +299,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Text(
                     'HOMEチームは試合登録時に選択できる応援チームです。\n'
-                    'J1, J2, J3, 日本代表の中から選択できます。',
+                    'J1, J2, J3, 日本代表の中から選択できます。\n'
+                    '対戦相手のリーグを絞り込むと、予定登録時の選択肢が絞られます。',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.grey.shade600,
                         ),

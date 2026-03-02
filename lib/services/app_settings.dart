@@ -10,16 +10,19 @@ class AppSettings extends ChangeNotifier {
 
   bool _includeStreaming = false;
   bool _matchSortAscending = false;
+  List<String> _selectedLeagues = ['j1', 'j2', 'j3'];
   bool _isLoaded = false;
 
   bool get includeStreaming => _includeStreaming;
   bool get matchSortAscending => _matchSortAscending;
+  List<String> get selectedLeagues => List.unmodifiable(_selectedLeagues);
   bool get isLoaded => _isLoaded;
 
   /// SharedPreferences から設定を読み込む（アプリ起動時に一度呼ぶ）
   Future<void> load() async {
     _includeStreaming = await _preferencesService.getIncludeStreaming();
     _matchSortAscending = await _preferencesService.getMatchSortAscending();
+    _selectedLeagues = await _preferencesService.getSelectedLeagues();
     _isLoaded = true;
     notifyListeners();
   }
@@ -38,6 +41,13 @@ class AppSettings extends ChangeNotifier {
     _matchSortAscending = value;
     notifyListeners();
     await _preferencesService.setMatchSortAscending(value);
+  }
+
+  /// 選択リーグを変更
+  Future<void> setSelectedLeagues(List<String> leagues) async {
+    _selectedLeagues = List<String>.from(leagues);
+    notifyListeners();
+    await _preferencesService.setSelectedLeagues(_selectedLeagues);
   }
 
   /// InheritedWidget ツリーから AppSettings を取得する
