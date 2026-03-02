@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../services/season_service.dart';
-import '../services/preferences_service.dart';
+import '../services/app_settings.dart';
 import '../models/season.dart';
 import '../models/match_result.dart';
 import '../widgets/app_layout.dart';
@@ -23,10 +23,8 @@ class LeagueListScreen extends StatefulWidget {
 
 class _LeagueListScreenState extends State<LeagueListScreen> {
   final _seasonService = SeasonService();
-  final _preferencesService = PreferencesService();
   List<Season> _seasons = [];
   bool _isLoading = true;
-  bool _includeStreaming = false;
 
   @override
   void initState() {
@@ -43,15 +41,11 @@ class _LeagueListScreenState extends State<LeagueListScreen> {
         await _seasonService.initialize();
       }
 
-      // 設定を読み込む
-      final includeStreaming = await _preferencesService.getIncludeStreaming();
-
       // 全シーズンを取得
       final seasons = _seasonService.getSeasonsOrderedByYear(ascending: false);
 
       setState(() {
         _seasons = seasons;
-        _includeStreaming = includeStreaming;
         _isLoading = false;
       });
     } catch (e) {
@@ -89,6 +83,8 @@ class _LeagueListScreenState extends State<LeagueListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = AppSettings.of(context);
+
     return DefaultTabController(
       length: 2, // シーズン、チーム
       child: AppLayout(
@@ -112,8 +108,8 @@ class _LeagueListScreenState extends State<LeagueListScreen> {
                   Expanded(
                     child: TabBarView(
                       children: [
-                        _buildSeasonTab(),
-                        _buildTeamTab(),
+                        _buildSeasonTab(settings.includeStreaming),
+                        _buildTeamTab(settings.includeStreaming),
                       ],
                     ),
                   ),
@@ -138,7 +134,7 @@ class _LeagueListScreenState extends State<LeagueListScreen> {
   }
 
   /// シーズンタブを構築
-  Widget _buildSeasonTab() {
+  Widget _buildSeasonTab(bool includeStreaming) {
     // 日本代表を除外
     final seasonsWithoutJapan = _seasons.where((s) => s.name != '日本代表').toList();
 
@@ -189,7 +185,7 @@ class _LeagueListScreenState extends State<LeagueListScreen> {
                     season.name,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  subtitle: Text('${_getFilteredMatchCount(season)}試合'),
+                  subtitle: Text('${_getFilteredMatchCount(season, includeStreaming)}試合'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -228,22 +224,22 @@ class _LeagueListScreenState extends State<LeagueListScreen> {
   }
 
   /// 観戦タイプでフィルタリングした試合数を取得
-  int _getFilteredMatchCount(Season season) {
-    if (_includeStreaming) {
+  int _getFilteredMatchCount(Season season, bool includeStreaming) {
+    if (includeStreaming) {
       return season.matches.length;
     }
     return season.matches.where((match) => match.viewingType == ViewingType.stadium).length;
   }
 
   /// チームタブを構築
-  Widget _buildTeamTab() {
+  Widget _buildTeamTab(bool includeStreaming) {
     // 全試合からHOMEチーム別に集計（観戦タイプでフィルタリング）
     final Map<String, int> teamMatchCounts = {};
     for (final season in _seasons) {
       for (final match in season.matches) {
         // 配信視聴を含める設定がONの場合はすべてカウント
         // OFFの場合はスタジアム観戦のみカウント
-        if (_includeStreaming || match.viewingType == ViewingType.stadium) {
+        if (includeStreaming || match.viewingType == ViewingType.stadium) {
           teamMatchCounts[match.homeTeam] = (teamMatchCounts[match.homeTeam] ?? 0) + 1;
         }
       }

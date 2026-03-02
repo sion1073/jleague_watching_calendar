@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import '../services/season_service.dart';
-import '../services/preferences_service.dart';
+import '../services/app_settings.dart';
 import '../models/season.dart';
 import '../models/match_result.dart';
 import '../widgets/match_list_statistics_widget.dart';
@@ -27,10 +27,11 @@ class TeamDetailScreen extends StatefulWidget {
 
 class _TeamDetailScreenState extends State<TeamDetailScreen> {
   final _seasonService = SeasonService();
-  final _preferencesService = PreferencesService();
   bool _showDetails = false;
   bool _isLoading = true;
-  List<_MatchWithSeason> _matches = [];
+
+  /// 全シーズンの試合データ（フィルタ前）
+  List<_MatchWithSeason> _allMatches = [];
 
   @override
   void initState() {
@@ -47,34 +48,24 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         await _seasonService.initialize();
       }
 
-      // 設定を読み込む
-      final includeStreaming = await _preferencesService.getIncludeStreaming();
-
       // 全シーズンを取得
       final seasons = _seasonService.getAllSeasons();
 
-      // 該当チームの試合を抽出（観戦タイプでフィルタリング）
+      // 該当チームの試合を抽出（フィルタはbuildで行う）
       final List<_MatchWithSeason> matches = [];
       for (final season in seasons) {
         for (final match in season.matches) {
           if (match.homeTeam == widget.teamName) {
-            // 配信視聴を含める設定がONの場合はすべて表示
-            // OFFの場合はスタジアム観戦のみ表示
-            if (includeStreaming || match.viewingType == ViewingType.stadium) {
-              matches.add(_MatchWithSeason(
-                season: season,
-                match: match,
-              ));
-            }
+            matches.add(_MatchWithSeason(
+              season: season,
+              match: match,
+            ));
           }
         }
       }
 
-      // 日付降順でソート
-      matches.sort((a, b) => b.match.matchDate.compareTo(a.match.matchDate));
-
       setState(() {
-        _matches = matches;
+        _allMatches = matches;
         _isLoading = false;
       });
     } catch (e) {
@@ -158,8 +149,19 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 日本代表かどうかを判定
+    final settings = AppSettings.of(context);
     final isJapanNationalTeam = widget.teamName == '日本代表';
+
+    // 観戦タイプでフィルタリングしてソート
+    final matches = _allMatches.where((m) {
+      return settings.includeStreaming ||
+          m.match.viewingType == ViewingType.stadium;
+    }).toList()
+      ..sort(
+        (a, b) => settings.matchSortAscending
+            ? a.match.matchDate.compareTo(b.match.matchDate)
+            : b.match.matchDate.compareTo(a.match.matchDate),
+      );
 
     return Scaffold(
       appBar: AppBar(
@@ -250,22 +252,21 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                 const Divider(),
 
                 // 観戦統計
-                if (_matches.isNotEmpty)
+                if (matches.isNotEmpty)
                   MatchListStatisticsWidget(
-                    matches: _matches.map((m) => m.match).toList(),
+                    matches: matches.map((m) => m.match).toList(),
                     title: '観戦統計（表示中の試合）',
                   ),
 
                 // 試合一覧
                 Expanded(
-                  child: _matches.isEmpty
+                  child: matches.isEmpty
                       ? _buildEmptyState()
                       : ListView.builder(
-                          itemCount: _matches.length,
+                          itemCount: matches.length,
                           padding: const EdgeInsets.all(8.0),
                           itemBuilder: (context, index) {
-                            final matchWithSeason = _matches[index];
-                            return _buildMatchCard(matchWithSeason);
+                            return _buildMatchCard(matches[index]);
                           },
                         ),
                 ),
@@ -324,25 +325,27 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                       : Colors.purple,
                 ),
                 const SizedBox(width: 8),
-                // 日付
-                Expanded(
-                  flex: 2,
+                // 日付（固定幅で改行防止）
+                SizedBox(
+                  width: 88,
                   child: Text(
                     dateFormatter.format(match.matchDate),
                     style: const TextStyle(fontWeight: FontWeight.bold),
+                    maxLines: 1,
                   ),
                 ),
+                const SizedBox(width: 8),
                 // 対戦相手
                 Expanded(
-                  flex: 3,
                   child: Text(
                     'vs ${match.awayTeam}',
                     style: const TextStyle(fontSize: 14),
                   ),
                 ),
+                const SizedBox(width: 8),
                 // 結果
-                Expanded(
-                  flex: 2,
+                SizedBox(
+                  width: 56,
                   child: match.isFinished
                       ? Text(
                           match.score,
@@ -350,12 +353,14 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                             fontWeight: FontWeight.bold,
                             color: _getResultColor(match.outcome),
                           ),
+                          maxLines: 1,
                         )
                       : Text(
                           _getResultText(match.outcome),
                           style: TextStyle(
                             color: _getResultColor(match.outcome),
                           ),
+                          maxLines: 1,
                         ),
                 ),
                 // 編集ボタン
@@ -404,9 +409,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                 ],
               ),
               // 得点者
-              if (match.goalScorers.isNotEmpty)
+              if (match.goalScorers.isNotEmpty) ...[
                 const SizedBox(height: 4),
-              if (match.goalScorers.isNotEmpty)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -420,10 +424,10 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                     ),
                   ],
                 ),
+              ],
               // メモ
-              if (match.memo.isNotEmpty)
+              if (match.memo.isNotEmpty) ...[
                 const SizedBox(height: 4),
-              if (match.memo.isNotEmpty)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -437,6 +441,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                     ),
                   ],
                 ),
+              ],
             ],
           ],
         ),

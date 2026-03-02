@@ -7,6 +7,7 @@ import 'models/goal_scorer.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/simple_auth_service.dart';
+import 'services/app_settings.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,28 +23,37 @@ void main() async {
   // 日本語ロケールの初期化
   await initializeDateFormatting('ja_JP', null);
 
-  runApp(const MyApp());
+  // アプリ設定を読み込む
+  final appSettings = AppSettings();
+  await appSettings.load();
+
+  runApp(MyApp(appSettings: appSettings));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final AppSettings appSettings;
+
+  const MyApp({super.key, required this.appSettings});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'J.LEAGUE観戦カレンダー',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1976D2), // J.LEAGUEカラー（青）
+    return AppSettingsScope(
+      settings: appSettings,
+      child: MaterialApp(
+        title: 'J.LEAGUE観戦カレンダー',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF1976D2), // J.LEAGUEカラー（青）
+          ),
+          useMaterial3: true,
         ),
-        useMaterial3: true,
+        // 初期画面は認証チェック画面
+        home: const AuthCheck(),
+        routes: {
+          '/login': (context) => const LoginScreen(),
+          '/home': (context) => const HomeScreen(),
+        },
       ),
-      // 初期画面は認証チェック画面
-      home: const AuthCheck(),
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/home': (context) => const HomeScreen(),
-      },
     );
   }
 }

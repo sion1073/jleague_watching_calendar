@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/season.dart';
 import '../models/match_result.dart';
-import '../services/preferences_service.dart';
+import '../services/app_settings.dart';
 import '../widgets/match_list_statistics_widget.dart';
 import '../widgets/app_drawer.dart';
 import 'match_form_screen.dart';
@@ -23,25 +23,7 @@ class SeasonDetailScreen extends StatefulWidget {
 }
 
 class _SeasonDetailScreenState extends State<SeasonDetailScreen> {
-  final _preferencesService = PreferencesService();
   bool _showDetails = false;
-  bool _includeStreaming = false;
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSettings();
-  }
-
-  /// 設定を読み込む
-  Future<void> _loadSettings() async {
-    final includeStreaming = await _preferencesService.getIncludeStreaming();
-    setState(() {
-      _includeStreaming = includeStreaming;
-      _isLoading = false;
-    });
-  }
 
   /// 試合結果を日本語テキストに変換
   String _getResultText(MatchOutcome? result) {
@@ -75,22 +57,18 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(widget.season.name),
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        ),
-        endDrawer: const AppDrawer(),
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
+    final settings = AppSettings.of(context);
 
-    // 試合を観戦タイプでフィルタリングして日付降順でソート
+    // 試合を観戦タイプでフィルタリングしてソート
     final matches = widget.season.matches.where((match) {
-      return _includeStreaming || match.viewingType == ViewingType.stadium;
+      return settings.includeStreaming ||
+          match.viewingType == ViewingType.stadium;
     }).toList()
-      ..sort((a, b) => b.matchDate.compareTo(a.matchDate));
+      ..sort(
+        (a, b) => settings.matchSortAscending
+            ? a.matchDate.compareTo(b.matchDate)
+            : b.matchDate.compareTo(a.matchDate),
+      );
 
     return Scaffold(
       appBar: AppBar(
@@ -225,25 +203,27 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen> {
                       : Colors.purple,
                 ),
                 const SizedBox(width: 8),
-                // 日付
-                Expanded(
-                  flex: 2,
+                // 日付（固定幅で改行防止）
+                SizedBox(
+                  width: 88,
                   child: Text(
                     dateFormatter.format(match.matchDate),
                     style: const TextStyle(fontWeight: FontWeight.bold),
+                    maxLines: 1,
                   ),
                 ),
+                const SizedBox(width: 8),
                 // 対戦カード
                 Expanded(
-                  flex: 4,
                   child: Text(
                     '${match.homeTeam} vs ${match.awayTeam}',
                     style: const TextStyle(fontSize: 14),
                   ),
                 ),
+                const SizedBox(width: 8),
                 // 結果
-                Expanded(
-                  flex: 2,
+                SizedBox(
+                  width: 56,
                   child: match.isFinished
                       ? Text(
                           match.score,
@@ -251,12 +231,14 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen> {
                             fontWeight: FontWeight.bold,
                             color: _getResultColor(match.outcome),
                           ),
+                          maxLines: 1,
                         )
                       : Text(
                           _getResultText(match.outcome),
                           style: TextStyle(
                             color: _getResultColor(match.outcome),
                           ),
+                          maxLines: 1,
                         ),
                 ),
                 // 編集ボタン
