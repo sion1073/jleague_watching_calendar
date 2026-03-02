@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../services/season_service.dart';
-import '../services/preferences_service.dart';
+import '../services/app_settings.dart';
 import '../models/season.dart';
 import '../models/match_result.dart';
 import '../widgets/app_layout.dart';
@@ -24,11 +24,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _seasonService = SeasonService();
-  final _preferencesService = PreferencesService();
   List<Season> _seasons = [];
-  List<MatchResult> _allMatches = [];
   bool _isLoading = true;
-  bool _includeStreaming = false;
 
   @override
   void initState() {
@@ -45,28 +42,11 @@ class _HomeScreenState extends State<HomeScreen> {
         await _seasonService.initialize();
       }
 
-      // 設定を読み込む
-      final includeStreaming = await _preferencesService.getIncludeStreaming();
-
       // 全シーズンを取得
       final seasons = _seasonService.getAllSeasons();
 
-      // 全試合を取得（観戦タイプでフィルタリング）
-      final allMatches = <MatchResult>[];
-      for (final season in seasons) {
-        for (final match in season.matches) {
-          // 配信視聴を含める設定がONの場合はすべて表示
-          // OFFの場合はスタジアム観戦のみ表示
-          if (includeStreaming || match.viewingType == ViewingType.stadium) {
-            allMatches.add(match);
-          }
-        }
-      }
-
       setState(() {
         _seasons = seasons;
-        _allMatches = allMatches;
-        _includeStreaming = includeStreaming;
         _isLoading = false;
       });
     } catch (e) {
@@ -103,9 +83,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// カレンダーの日付が選択された時のハンドラー
-  void _onDaySelected(DateTime selectedDay) {
+  void _onDaySelected(DateTime selectedDay, List<MatchResult> allMatches) {
     // 選択された日の試合があれば詳細を表示
-    final matchesOnDay = _allMatches.where((match) {
+    final matchesOnDay = allMatches.where((match) {
       return match.matchDate.year == selectedDay.year &&
           match.matchDate.month == selectedDay.month &&
           match.matchDate.day == selectedDay.day;
@@ -228,6 +208,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = AppSettings.of(context);
+
+    // 全試合を取得（観戦タイプでフィルタリング）
+    final allMatches = <MatchResult>[];
+    for (final season in _seasons) {
+      for (final match in season.matches) {
+        if (settings.includeStreaming ||
+            match.viewingType == ViewingType.stadium) {
+          allMatches.add(match);
+        }
+      }
+    }
+
     return AppLayout(
       currentIndex: 1, // ホーム
       onNavigationChanged: _onNavigationChanged,
@@ -235,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _seasons.isEmpty
               ? _buildEmptyState()
-              : _buildContent(),
+              : _buildContent(allMatches, settings.includeStreaming),
     );
   }
 
@@ -274,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// コンテンツを構築
-  Widget _buildContent() {
+  Widget _buildContent(List<MatchResult> allMatches, bool includeStreaming) {
     return RefreshIndicator(
       onRefresh: _loadData,
       child: ListView(
@@ -282,8 +275,8 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // カレンダーウィジェット
           MatchCalendarWidget(
-            matchResults: _allMatches,
-            onDaySelected: _onDaySelected,
+            matchResults: allMatches,
+            onDaySelected: (day) => _onDaySelected(day, allMatches),
           ),
           const SizedBox(height: 16),
           // 試合登録ボタン
@@ -302,7 +295,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // 統計ウィジェット
           MatchStatisticsWidget(
             seasons: _seasons,
-            includeStreaming: _includeStreaming,
+            includeStreaming: includeStreaming,
           ),
         ],
       ),

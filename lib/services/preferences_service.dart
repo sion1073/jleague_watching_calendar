@@ -5,6 +5,7 @@ import '../constants/team_constants.dart';
 class PreferencesService {
   static const String _keyIncludeStreaming = 'include_streaming';
   static const String _keyHomeTeams = 'home_teams';
+  static const String _keyMatchSortAscending = 'match_sort_ascending';
 
   /// 配信視聴を含めるかどうか
   Future<bool> getIncludeStreaming() async {
@@ -16,6 +17,18 @@ class PreferencesService {
   Future<void> setIncludeStreaming(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyIncludeStreaming, value);
+  }
+
+  /// 試合リストを昇順にするかどうか（trueで昇順、falseで降順）
+  Future<bool> getMatchSortAscending() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_keyMatchSortAscending) ?? false; // デフォルトは降順
+  }
+
+  /// 試合リストのソート順を設定
+  Future<void> setMatchSortAscending(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyMatchSortAscending, value);
   }
 
   /// HOMEチームのリストを取得

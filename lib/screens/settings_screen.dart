@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import '../services/preferences_service.dart';
+import '../services/app_settings.dart';
 import '../constants/team_constants.dart';
+import '../services/preferences_service.dart';
 
 /// 設定画面
 ///
 /// アプリの各種設定を管理します。
 /// - 配信視聴を含めるかどうか
+/// - 試合リストのソート順（昇順/降順）
 /// - HOMEチームの選択
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -16,24 +18,20 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final _preferencesService = PreferencesService();
-  bool _includeStreaming = false;
   List<String> _selectedHomeTeams = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadSettings();
+    _loadHomeTeams();
   }
 
-  /// 設定を読み込む
-  Future<void> _loadSettings() async {
+  /// HOMEチーム設定を読み込む
+  Future<void> _loadHomeTeams() async {
     try {
-      final includeStreaming = await _preferencesService.getIncludeStreaming();
       final homeTeams = await _preferencesService.getHomeTeams();
-
       setState(() {
-        _includeStreaming = includeStreaming;
         _selectedHomeTeams = homeTeams;
         _isLoading = false;
       });
@@ -46,19 +44,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           SnackBar(content: Text('設定の読み込みに失敗しました: $e')),
         );
       }
-    }
-  }
-
-  /// 配信視聴を含める設定を変更
-  Future<void> _toggleIncludeStreaming(bool value) async {
-    setState(() {
-      _includeStreaming = value;
-    });
-    await _preferencesService.setIncludeStreaming(value);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(value ? '配信視聴を含めます' : 'スタジアム観戦のみ表示します')),
-      );
     }
   }
 
@@ -141,6 +126,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = AppSettings.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('設定'),
@@ -157,15 +144,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     horizontal: 16.0,
                     vertical: 8.0,
                   ),
-                  child: SwitchListTile(
-                    title: const Text('配信視聴を含める'),
-                    subtitle: const Text('DAZN視聴の試合も表示します'),
-                    value: _includeStreaming,
-                    onChanged: _toggleIncludeStreaming,
-                    secondary: Icon(
-                      _includeStreaming ? Icons.tv : Icons.stadium,
-                      color: Theme.of(context).primaryColor,
-                    ),
+                  child: Column(
+                    children: [
+                      SwitchListTile(
+                        title: const Text('配信視聴を含める'),
+                        subtitle: const Text('DAZN視聴の試合も表示します'),
+                        value: settings.includeStreaming,
+                        onChanged: (value) {
+                          settings.setIncludeStreaming(value);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                value ? '配信視聴を含めます' : 'スタジアム観戦のみ表示します',
+                              ),
+                            ),
+                          );
+                        },
+                        secondary: Icon(
+                          settings.includeStreaming ? Icons.tv : Icons.stadium,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      SwitchListTile(
+                        title: const Text('試合リストを昇順に表示'),
+                        subtitle: const Text('ONで日付が古い順、OFFで新しい順'),
+                        value: settings.matchSortAscending,
+                        onChanged: (value) {
+                          settings.setMatchSortAscending(value);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                value ? '日付の古い順に表示します' : '日付の新しい順に表示します',
+                              ),
+                            ),
+                          );
+                        },
+                        secondary: Icon(
+                          settings.matchSortAscending
+                              ? Icons.arrow_upward
+                              : Icons.arrow_downward,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
