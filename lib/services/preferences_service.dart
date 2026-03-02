@@ -6,6 +6,7 @@ class PreferencesService {
   static const String _keyIncludeStreaming = 'include_streaming';
   static const String _keyHomeTeams = 'home_teams';
   static const String _keyMatchSortAscending = 'match_sort_ascending';
+  static const String _keySelectedLeagues = 'selected_leagues';
 
   /// 配信視聴を含めるかどうか
   Future<bool> getIncludeStreaming() async {
@@ -43,5 +44,17 @@ class PreferencesService {
   Future<void> setHomeTeams(List<String> teams) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(_keyHomeTeams, teams);
+  }
+
+  /// 選択リーグのリストを取得（'j1', 'j2', 'j3'）
+  Future<List<String>> getSelectedLeagues() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_keySelectedLeagues) ?? ['j1', 'j2', 'j3'];
+  }
+
+  /// 選択リーグのリストを設定
+  Future<void> setSelectedLeagues(List<String> leagues) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_keySelectedLeagues, leagues);
   }
 }
