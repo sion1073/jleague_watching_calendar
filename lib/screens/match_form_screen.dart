@@ -157,9 +157,11 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
   /// 選択リーグに基づいて対戦相手チームリストを生成
   List<String> _getAvailableAwayTeams(List<String> selectedLeagues) {
     final teams = <String>{};
-    if (selectedLeagues.contains('j1')) teams.addAll(j1Teams);
-    if (selectedLeagues.contains('j2')) teams.addAll(j2Teams);
-    if (selectedLeagues.contains('j3')) teams.addAll(j3Teams);
+    for (final team in allTeamInfoList) {
+      if (selectedLeagues.contains(team.division.toLowerCase())) {
+        teams.add(team.name);
+      }
+    }
     // その他は常に含める
     teams.add('その他');
     final sorted = teams.toList()..sort();

@@ -49,13 +49,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// HOMEチーム選択画面を表示
   Future<void> _showHomeTeamSelectionDialog() async {
-    // 全チームリストを作成（J1 + J2 + J3 + 日本代表）
-    final allTeams = <String>{
-      ...j1Teams,
-      ...j2Teams,
-      ...j3Teams,
-      '日本代表',
-    }.toList()
+    // 全チームリストを作成（全 division）
+    final allTeams = allTeamInfoList.map((t) => t.name).toSet().toList()
       ..sort();
 
     // 一時的な選択状態を保持
