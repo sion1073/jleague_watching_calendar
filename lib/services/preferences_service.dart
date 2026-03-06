@@ -36,7 +36,7 @@ class PreferencesService {
   Future<List<String>> getHomeTeams() async {
     final prefs = await SharedPreferences.getInstance();
     final teams = prefs.getStringList(_keyHomeTeams);
-    // デフォルトは元のhomeTeams（FC東京、鹿島アントラーズ、日本代表）
+    // デフォルトは homeTeams（日本代表）
     return teams ?? List<String>.from(homeTeams);
   }
 

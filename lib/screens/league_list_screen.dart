@@ -5,6 +5,7 @@ import '../services/app_settings.dart';
 import '../models/season.dart';
 import '../models/match_result.dart';
 import '../widgets/app_layout.dart';
+import '../widgets/team_emblem_widget.dart';
 import 'season_detail_screen.dart';
 import 'season_form_screen.dart';
 import 'team_detail_screen.dart';
@@ -282,12 +283,7 @@ class _LeagueListScreenState extends State<LeagueListScreen> {
           return Card(
             margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
             child: ListTile(
-              leading: CircleAvatar(
-                child: Text(
-                  teamName[0],
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
+              leading: TeamEmblemWidget(teamName: teamName),
               title: Text(
                 teamName,
                 style: const TextStyle(fontWeight: FontWeight.bold),
