@@ -6,6 +6,7 @@ import '../services/app_settings.dart';
 import '../widgets/match_list_statistics_widget.dart';
 import '../widgets/app_drawer.dart';
 import 'match_form_screen.dart';
+import 'season_form_screen.dart';
 
 /// シーズン詳細画面
 ///
@@ -79,26 +80,52 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen> {
       endDrawer: const AppDrawer(),
       body: Column(
         children: [
-          // 予定を追加ボタン
+          // 予定を追加ボタン + シーズン編集
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => MatchFormScreen(season: widget.season),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MatchFormScreen(season: widget.season),
+                        ),
+                      );
+                      if (result == true && mounted) {
+                        setState(() {});
+                      }
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('予定を追加'),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(0, 48),
+                    ),
                   ),
-                );
-                if (result == true && mounted) {
-                  setState(() {});
-                }
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('予定を追加'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 48),
-              ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: Icon(
+                    Icons.edit_outlined,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SeasonFormScreen(season: widget.season),
+                      ),
+                    );
+                    if (result == true && mounted) {
+                      setState(() {});
+                    }
+                  },
+                  tooltip: 'シーズンを編集',
+                ),
+              ],
             ),
           ),
 
