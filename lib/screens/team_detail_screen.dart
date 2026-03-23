@@ -168,58 +168,65 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       appBar: AppBar(
         title: Text(widget.teamName),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        actions: [
-          // 日本代表の場合のみシーズン編集ボタンを表示
-          if (isJapanNationalTeam)
-            IconButton(
-              icon: const Icon(Icons.settings),
-              onPressed: () async {
-                final japanSeason = await _getOrCreateJapanSeason();
-                if (!context.mounted) return;
-
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SeasonFormScreen(season: japanSeason),
-                  ),
-                );
-                if (result == true && context.mounted) {
-                  _loadData();
-                }
-              },
-              tooltip: 'シーズン設定',
-            ),
-        ],
       ),
       endDrawer: const AppDrawer(),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // 予定を追加ボタン（日本代表の場合のみ表示）
+                // 予定を追加ボタン + シーズン編集（日本代表の場合のみ表示）
                 if (isJapanNationalTeam)
                   Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        final japanSeason = await _getOrCreateJapanSeason();
-                        if (!context.mounted) return;
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              final japanSeason = await _getOrCreateJapanSeason();
+                              if (!context.mounted) return;
 
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => MatchFormScreen(season: japanSeason),
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => MatchFormScreen(season: japanSeason),
+                                ),
+                              );
+                              if (result == true && context.mounted) {
+                                _loadData();
+                              }
+                            },
+                            icon: const Icon(Icons.add),
+                            label: const Text('予定を追加'),
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size(0, 48),
+                            ),
                           ),
-                        );
-                        if (result == true && context.mounted) {
-                          _loadData();
-                        }
-                      },
-                      icon: const Icon(Icons.add),
-                      label: const Text('予定を追加'),
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 48),
-                      ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: Icon(
+                            Icons.edit_outlined,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                          onPressed: () async {
+                            final japanSeason = await _getOrCreateJapanSeason();
+                            if (!context.mounted) return;
+
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SeasonFormScreen(season: japanSeason),
+                              ),
+                            );
+                            if (result == true && context.mounted) {
+                              _loadData();
+                            }
+                          },
+                          tooltip: 'シーズンを編集',
+                        ),
+                      ],
                     ),
                   ),
 
