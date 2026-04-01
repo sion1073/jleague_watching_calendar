@@ -458,7 +458,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        '得点者: ${match.getSortedGoalScorers().map((s) => s.toDisplayString()).join(', ')}',
+                        match.getSortedGoalScorers().map((s) => s.toDisplayString()).join(', '),
                         style: const TextStyle(fontSize: 12),
                       ),
                     ),
@@ -475,7 +475,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        'メモ: ${match.memo}',
+                        match.memo,
                         style: const TextStyle(fontSize: 12),
                       ),
                     ),

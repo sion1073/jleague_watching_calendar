@@ -607,7 +607,7 @@ class _SearchScreenState extends State<SearchScreen> {
               if (result.match.goalScorers.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
-                  '得点者: ${result.match.getSortedGoalScorers().map((g) => g.toDisplayString()).join(', ')}',
+                  result.match.getSortedGoalScorers().map((g) => g.toDisplayString()).join(', '),
                   style: const TextStyle(fontSize: 14, color: Colors.blue),
                 ),
               ],
@@ -616,7 +616,7 @@ class _SearchScreenState extends State<SearchScreen> {
               if (result.match.memo.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
-                  'メモ: ${result.match.memo}',
+                  result.match.memo,
                   style: const TextStyle(fontSize: 14, color: Colors.grey),
                 ),
               ],
