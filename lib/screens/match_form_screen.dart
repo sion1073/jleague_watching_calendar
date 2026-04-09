@@ -275,7 +275,7 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
 
       setState(() {
         _goalScorers.add(GoalScorer(
-          name: nameController.text.trim(),
+          name: nameController.text.trim().replaceAll('　', ' '),
           team: selectedTeam!,
           minuteScored: minute,
         ));
