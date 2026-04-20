@@ -37,6 +37,9 @@ class _SearchScreenState extends State<SearchScreen> {
   // 検索エリアの開閉状態
   bool _isSearchAreaExpanded = true;
 
+  // 検索結果の展開状態
+  Set<int> _expandedSearchIndices = {};
+
   @override
   void dispose() {
     _keywordController.dispose();
@@ -536,45 +539,76 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
         ),
-        ..._searchResults.map((result) => _buildSearchResultItem(result)),
+        ..._searchResults.asMap().entries.map((entry) => _buildSearchResultItem(entry.value, entry.key)),
       ],
     );
   }
 
   /// 検索結果アイテムを構築
-  Widget _buildSearchResultItem(_SearchResultItem result) {
+  Widget _buildSearchResultItem(_SearchResultItem result, int resultIndex) {
     final dateFormat = DateFormat('yyyy/MM/dd');
+    final isExpanded = _expandedSearchIndices.contains(resultIndex);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: InkWell(
-        onTap: () {
-          // シーズン詳細画面またはチーム詳細画面へ遷移
-          // デフォルトはシーズン詳細画面
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => SeasonDetailScreen(season: result.season),
-            ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 試合情報（1行目）
-              Row(
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 基本情報（タップで展開/折りたたみ）
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  if (_expandedSearchIndices.contains(resultIndex)) {
+                    _expandedSearchIndices.remove(resultIndex);
+                  } else {
+                    _expandedSearchIndices.add(resultIndex);
+                  }
+                });
+              },
+              child: Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      '${dateFormat.format(result.match.matchDate)} ${result.match.homeTeam} vs ${result.match.awayTeam}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 試合情報（日付、チーム名）
+                        Text(
+                          '${dateFormat.format(result.match.matchDate)} ${result.match.homeTeam} vs ${result.match.awayTeam}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        // シーズン名
+                        Text(
+                          'シーズン: ${result.season.name}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  // スコア（試合完了時のみ）
+                  if (result.match.isFinished && result.match.score.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Text(
+                        result.match.score,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: _getResultColor(result.match.outcome),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  // 勝敗バッジ
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -591,48 +625,58 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  // 展開インジケーター
+                  Icon(
+                    isExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: Theme.of(context).primaryColor,
+                    size: 20,
+                  ),
                 ],
               ),
+            ),
 
-              // スコア
-              if (result.match.score.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'スコア: ${result.match.score}',
-                  style: const TextStyle(fontSize: 14),
-                ),
-              ],
+            // 詳細情報（展開状態の場合のみ表示）
+            if (isExpanded && result.match.isFinished) ...[
+              const SizedBox(height: 8),
+              const Divider(),
 
               // 得点者
               if (result.match.goalScorers.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  result.match.getSortedGoalScorers().map((g) => g.toDisplayString()).join(', '),
-                  style: const TextStyle(fontSize: 14, color: Colors.blue),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.sports_soccer, size: 16),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        result.match.getSortedGoalScorers().map((g) => g.toDisplayString()).join(', '),
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 4),
               ],
 
               // メモ
               if (result.match.memo.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  result.match.memo,
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.note, size: 16),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        result.match.memo,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
                 ),
               ],
-
-              // シーズン名
-              const SizedBox(height: 8),
-              Text(
-                'シーズン: ${result.season.name}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
             ],
-          ),
+          ],
         ),
       ),
     );
