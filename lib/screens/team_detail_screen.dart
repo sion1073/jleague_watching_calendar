@@ -27,7 +27,7 @@ class TeamDetailScreen extends StatefulWidget {
 
 class _TeamDetailScreenState extends State<TeamDetailScreen> {
   final _seasonService = SeasonService();
-  bool _showDetails = false;
+  Set<int> _expandedMatchIndices = {};
   bool _showStatistics = false;
   bool _isLoading = true;
 
@@ -269,34 +269,6 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                   const Divider(height: 1),
                 ],
 
-                // 詳細情報表示トグルボタン
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _showDetails ? Icons.expand_less : Icons.expand_more,
-                        color: Theme.of(context).primaryColor,
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        '詳細情報を表示',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const Spacer(),
-                      Switch(
-                        value: _showDetails,
-                        onChanged: (value) {
-                          setState(() {
-                            _showDetails = value;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-
-                const Divider(height: 1),
 
                 // 試合一覧
                 Expanded(
@@ -306,7 +278,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                           itemCount: matches.length,
                           padding: const EdgeInsets.all(8.0),
                           itemBuilder: (context, index) {
-                            return _buildMatchCard(matches[index]);
+                            return _buildMatchCard(matches[index], index);
                           },
                         ),
                 ),
@@ -339,10 +311,11 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   }
 
   /// 試合カードを構築
-  Widget _buildMatchCard(_MatchWithSeason matchWithSeason) {
+  Widget _buildMatchCard(_MatchWithSeason matchWithSeason, int matchIndex) {
     final season = matchWithSeason.season;
     final match = matchWithSeason.match;
     final dateFormatter = DateFormat('yyyy/MM/dd');
+    final isExpanded = _expandedMatchIndices.contains(matchIndex);
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4.0),
@@ -354,54 +327,77 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             // 基本情報
             Row(
               children: [
-                // 観戦タイプアイコン
-                Icon(
-                  match.viewingType == ViewingType.stadium
-                      ? Icons.stadium
-                      : Icons.tv,
-                  size: 16,
-                  color: match.viewingType == ViewingType.stadium
-                      ? Colors.blue
-                      : Colors.purple,
-                ),
-                const SizedBox(width: 8),
-                // 日付（固定幅で改行防止）
-                SizedBox(
-                  width: 88,
-                  child: Text(
-                    dateFormatter.format(match.matchDate),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                    maxLines: 1,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // 対戦相手
                 Expanded(
-                  child: Text(
-                    'vs ${match.awayTeam}',
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // 結果
-                SizedBox(
-                  width: 56,
-                  child: match.isFinished
-                      ? Text(
-                          match.score,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: _getResultColor(match.outcome),
-                          ),
-                          maxLines: 1,
-                        )
-                      : Text(
-                          _getResultText(match.outcome),
-                          style: TextStyle(
-                            color: _getResultColor(match.outcome),
-                          ),
-                          maxLines: 1,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        if (_expandedMatchIndices.contains(matchIndex)) {
+                          _expandedMatchIndices.remove(matchIndex);
+                        } else {
+                          _expandedMatchIndices.add(matchIndex);
+                        }
+                      });
+                    },
+                    child: Row(
+                      children: [
+                        // 観戦タイプアイコン
+                        Icon(
+                          match.viewingType == ViewingType.stadium
+                              ? Icons.stadium
+                              : Icons.tv,
+                          size: 16,
+                          color: match.viewingType == ViewingType.stadium
+                              ? Colors.blue
+                              : Colors.purple,
                         ),
+                        const SizedBox(width: 8),
+                        // 日付（固定幅で改行防止）
+                        SizedBox(
+                          width: 88,
+                          child: Text(
+                            dateFormatter.format(match.matchDate),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            maxLines: 1,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // 対戦相手
+                        Expanded(
+                          child: Text(
+                            'vs ${match.awayTeam}',
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // 結果
+                        SizedBox(
+                          width: 56,
+                          child: match.isFinished
+                              ? Text(
+                                  match.score,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: _getResultColor(match.outcome),
+                                  ),
+                                  maxLines: 1,
+                                )
+                              : Text(
+                                  _getResultText(match.outcome),
+                                  style: TextStyle(
+                                    color: _getResultColor(match.outcome),
+                                  ),
+                                  maxLines: 1,
+                                ),
+                        ),
+                        // 展開インジケーター
+                        Icon(
+                          isExpanded ? Icons.expand_less : Icons.expand_more,
+                          color: Theme.of(context).primaryColor,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 // 編集ボタン
                 IconButton(
@@ -426,8 +422,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
               ],
             ),
 
-            // 詳細情報（トグルONの場合のみ表示）
-            if (_showDetails && match.isFinished) ...[
+            // 詳細情報（展開状態の場合のみ表示）
+            if (isExpanded && match.isFinished) ...[
               const SizedBox(height: 8),
               const Divider(),
               // 勝敗
