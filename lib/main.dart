@@ -4,6 +4,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'models/season.dart';
 import 'models/match_result.dart';
 import 'models/goal_scorer.dart';
+import 'models/match_highlight.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/simple_auth_service.dart';
@@ -19,6 +20,7 @@ void main() async {
   Hive.registerAdapter(SeasonAdapter());
   Hive.registerAdapter(MatchResultAdapter());
   Hive.registerAdapter(GoalScorerAdapter());
+  Hive.registerAdapter(MatchHighlightAdapter());
 
   // 日本語ロケールの初期化
   await initializeDateFormatting('ja_JP', null);

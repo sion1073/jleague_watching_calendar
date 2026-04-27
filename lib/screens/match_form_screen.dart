@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/season.dart';
 import '../models/match_result.dart';
 import '../models/goal_scorer.dart';
+import '../models/match_highlight.dart';
 import '../services/season_service.dart';
 import '../services/preferences_service.dart';
 import '../services/app_settings.dart';
@@ -36,6 +37,8 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
   late TextEditingController _homeScoreController;
   late TextEditingController _awayScoreController;
   late TextEditingController _memoController;
+  late TextEditingController _highlightUrlController;
+  late TextEditingController _highlightTitleController;
 
   // 状態
   late Season _selectedSeason;
@@ -76,6 +79,11 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
 
     _memoController = TextEditingController(text: widget.match?.memo ?? '');
 
+    // ハイライトの初期化
+    final highlight = widget.match?.highlight;
+    _highlightUrlController = TextEditingController(text: highlight?.url ?? '');
+    _highlightTitleController = TextEditingController(text: highlight?.title ?? 'ハイライト');
+
     // 利用可能なシーズンとHOMEチームを取得
     _loadSettings();
   }
@@ -86,6 +94,8 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
     _homeScoreController.dispose();
     _awayScoreController.dispose();
     _memoController.dispose();
+    _highlightUrlController.dispose();
+    _highlightTitleController.dispose();
     super.dispose();
   }
 
@@ -335,6 +345,17 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
           ? '$homeScore-$awayScore'
           : '';
 
+      // ハイライト情報を作成
+      MatchHighlight? highlight;
+      final highlightUrl = _highlightUrlController.text.trim();
+      if (highlightUrl.isNotEmpty) {
+        final highlightTitle = _highlightTitleController.text.trim();
+        highlight = MatchHighlight(
+          url: highlightUrl,
+          title: highlightTitle.isNotEmpty ? highlightTitle : 'ハイライト',
+        );
+      }
+
       if (_isEditMode) {
         // 編集モード: 既存の試合を更新
         widget.match!.matchDate = _selectedDate;
@@ -346,6 +367,7 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
         widget.match!.goalScorers.clear();
         widget.match!.goalScorers.addAll(_goalScorers);
         widget.match!.memo = _memoController.text.trim();
+        widget.match!.highlight = highlight;
 
         // シーズンが変更された場合の処理
         if (_selectedSeason.key != widget.season.key) {
@@ -368,15 +390,23 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
           viewingTypeIndex: _selectedViewingType.index,
           goalScorers: _goalScorers,
           memo: _memoController.text.trim(),
+          highlight: highlight,
         );
 
         _selectedSeason.addMatch(newMatch);
       }
 
+      // 保存成功時のみ画面遷移
       if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
         Navigator.pop(context, true);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('Save error: $e');
+      print('Stacktrace: $stackTrace');
+
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -728,6 +758,38 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
                 alignLabelWithHint: true,
               ),
               maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+
+            // ハイライトURL
+            TextFormField(
+              controller: _highlightUrlController,
+              decoration: const InputDecoration(
+                labelText: 'ハイライト動画URL（任意）',
+                border: OutlineInputBorder(),
+                hintText: 'https://www.youtube.com/watch?v=xxx',
+                helperText: 'YouTubeのリンクを入力してください',
+              ),
+              validator: (value) {
+                if (value != null && value.isNotEmpty) {
+                  final highlight = MatchHighlight(url: value.trim());
+                  if (!highlight.isValidYouTubeUrl()) {
+                    return '有効なYouTubeリンクを入力してください';
+                  }
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+
+            // ハイライトタイトル
+            TextFormField(
+              controller: _highlightTitleController,
+              decoration: const InputDecoration(
+                labelText: 'ハイライトのタイトル（任意）',
+                border: OutlineInputBorder(),
+                hintText: 'ハイライト',
+              ),
             ),
             const SizedBox(height: 24),
 
