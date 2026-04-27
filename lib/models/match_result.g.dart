@@ -25,13 +25,14 @@ class MatchResultAdapter extends TypeAdapter<MatchResult> {
       viewingTypeIndex: fields[7] as int,
       goalScorers: (fields[5] as List?)?.cast<GoalScorer>(),
       memo: fields[6] as String,
+      highlight: fields[8] as MatchHighlight?,
     );
   }
 
   @override
   void write(BinaryWriter writer, MatchResult obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.matchDate)
       ..writeByte(1)
@@ -47,7 +48,9 @@ class MatchResultAdapter extends TypeAdapter<MatchResult> {
       ..writeByte(6)
       ..write(obj.memo)
       ..writeByte(7)
-      ..write(obj.viewingTypeIndex);
+      ..write(obj.viewingTypeIndex)
+      ..writeByte(8)
+      ..write(obj.highlight);
   }
 
   @override

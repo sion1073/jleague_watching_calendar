@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
+import 'dart:html' as html;
+import 'dart:ui_web' as ui;
 import '../services/season_service.dart';
 import '../services/app_settings.dart';
 import '../models/season.dart';
@@ -478,9 +480,75 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                   ],
                 ),
               ],
+              // ハイライト
+              if (match.highlight != null && match.highlight!.isValidYouTubeUrl()) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.video_library, size: 16),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        match.highlight!.title,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _buildYoutubePlayer(match.highlight!.getYouTubeVideoId() ?? ''),
+              ],
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  /// YouTubeプレイヤーをビルド
+  Widget _buildYoutubePlayer(String videoId) {
+    if (videoId.isEmpty) {
+      return Container(
+        height: 200,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade300,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Center(
+          child: Text(
+            'ハイライトURLが無効です',
+            style: TextStyle(color: Colors.grey.shade600),
+          ),
+        ),
+      );
+    }
+
+    // HTML iframe を登録
+    final String viewType = 'youtube-player-iframe-${videoId.hashCode}';
+    // ignore: undefined_prefixed_name
+    ui.platformViewRegistry.registerViewFactory(
+      viewType,
+      (int viewId) {
+        final iframe = html.IFrameElement()
+          ..width = '100%'
+          ..height = '100%'
+          ..src = 'https://www.youtube.com/embed/$videoId?modestbranding=1'
+          ..style.border = 'none';
+        return iframe;
+      },
+    );
+
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade900,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: HtmlElementView(
+        viewType: viewType,
       ),
     );
   }

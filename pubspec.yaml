@@ -60,6 +60,9 @@ dependencies:
   # カレンダー表示
   table_calendar: ^3.1.2
 
+  # YouTube動画埋め込み再生
+  youtube_player_flutter: ^8.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

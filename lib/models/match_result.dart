@@ -1,5 +1,6 @@
 import 'package:hive/hive.dart';
 import 'goal_scorer.dart';
+import 'match_highlight.dart';
 
 part 'match_result.g.dart';
 
@@ -52,6 +53,10 @@ class MatchResult extends HiveObject {
   @HiveField(7)
   int viewingTypeIndex; // ViewingTypeのindexを保存
 
+  /// ハイライト動画
+  @HiveField(8)
+  MatchHighlight? highlight;
+
   MatchResult({
     required this.matchDate,
     required this.homeTeam,
@@ -61,6 +66,7 @@ class MatchResult extends HiveObject {
     this.viewingTypeIndex = 0, // デフォルトはstadium
     List<GoalScorer>? goalScorers,
     this.memo = '',
+    this.highlight,
   }) : goalScorers = goalScorers ?? [];
 
   /// 勝敗を取得
@@ -93,6 +99,9 @@ class MatchResult extends HiveObject {
               .toList() ??
           [],
       memo: json['memo'] as String? ?? '',
+      highlight: json['highlight'] != null
+          ? MatchHighlight.fromJson(json['highlight'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -107,6 +116,7 @@ class MatchResult extends HiveObject {
       'viewingType': viewingType.name,
       'goalScorers': goalScorers.map((e) => e.toJson()).toList(),
       'memo': memo,
+      'highlight': highlight?.toJson(),
     };
   }
 
