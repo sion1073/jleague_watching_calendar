@@ -424,8 +424,8 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen> {
       );
     }
 
-    // HTML iframe を登録
-    const String viewType = 'youtube-player-iframe';
+    // 各ビデオに一意の viewType を割り当てる
+    final String viewType = 'youtube-player-iframe-$videoId';
     // ignore: undefined_prefixed_name
     ui.platformViewRegistry.registerViewFactory(
       viewType,

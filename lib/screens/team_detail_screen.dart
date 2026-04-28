@@ -526,8 +526,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       );
     }
 
-    // HTML iframe を登録
-    final String viewType = 'youtube-player-iframe-${videoId.hashCode}';
+    // 各ビデオに一意の viewType を割り当てる
+    final String viewType = 'youtube-player-iframe-$videoId';
     // ignore: undefined_prefixed_name
     ui.platformViewRegistry.registerViewFactory(
       viewType,
