@@ -68,11 +68,21 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen> {
       return settings.includeStreaming ||
           match.viewingType == ViewingType.stadium;
     }).toList()
-      ..sort(
-        (a, b) => settings.matchSortAscending
-            ? a.matchDate.compareTo(b.matchDate)
-            : b.matchDate.compareTo(a.matchDate),
-      );
+      ..sort((a, b) {
+        // 日付部分のみ（年月日）で比較
+        final aDate = DateTime(a.matchDate.year, a.matchDate.month, a.matchDate.day);
+        final bDate = DateTime(b.matchDate.year, b.matchDate.month, b.matchDate.day);
+
+        if (settings.matchSortAscending) {
+          final dateComparison = aDate.compareTo(bDate);
+          if (dateComparison != 0) return dateComparison;
+          return a.homeTeam.compareTo(b.homeTeam);
+        } else {
+          final dateComparison = bDate.compareTo(aDate);
+          if (dateComparison != 0) return dateComparison;
+          return b.homeTeam.compareTo(a.homeTeam);
+        }
+      });
 
     return Scaffold(
       appBar: AppBar(
