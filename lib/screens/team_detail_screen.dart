@@ -160,11 +160,21 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       return settings.includeStreaming ||
           m.match.viewingType == ViewingType.stadium;
     }).toList()
-      ..sort(
-        (a, b) => settings.matchSortAscending
-            ? a.match.matchDate.compareTo(b.match.matchDate)
-            : b.match.matchDate.compareTo(a.match.matchDate),
-      );
+      ..sort((a, b) {
+        // 日付部分のみ（年月日）で比較
+        final aDate = DateTime(a.match.matchDate.year, a.match.matchDate.month, a.match.matchDate.day);
+        final bDate = DateTime(b.match.matchDate.year, b.match.matchDate.month, b.match.matchDate.day);
+
+        if (settings.matchSortAscending) {
+          final dateComparison = aDate.compareTo(bDate);
+          if (dateComparison != 0) return dateComparison;
+          return a.match.homeTeam.compareTo(b.match.homeTeam);
+        } else {
+          final dateComparison = bDate.compareTo(aDate);
+          if (dateComparison != 0) return dateComparison;
+          return b.match.homeTeam.compareTo(a.match.homeTeam);
+        }
+      });
 
     return Scaffold(
       appBar: AppBar(
