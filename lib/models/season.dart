@@ -83,8 +83,9 @@ class Season extends HiveObject {
 
   /// 統計情報: 勝率
   double get winRate {
-    if (totalMatches == 0) return 0.0;
-    return totalWins / totalMatches;
+    final rankedCount = matches.where((m) => m.isCountedInWinRate).length;
+    if (rankedCount == 0) return 0.0;
+    return totalWins / rankedCount;
   }
 
   @override

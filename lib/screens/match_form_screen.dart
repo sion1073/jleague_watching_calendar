@@ -36,6 +36,8 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
   late TextEditingController _dateController;
   late TextEditingController _homeScoreController;
   late TextEditingController _awayScoreController;
+  late TextEditingController _awayTeamOtherController;
+  late TextEditingController _homeTeamOtherController;
   late TextEditingController _memoController;
   late TextEditingController _highlightUrlController;
   late TextEditingController _highlightTitleController;
@@ -52,6 +54,9 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
   // チーム選択
   String? _selectedHomeTeam;
   String? _selectedAwayTeam;
+
+  bool get _isHomeTeamOther => _selectedHomeTeam == 'その他';
+  bool get _isAwayTeamOther => _selectedAwayTeam == 'その他';
 
   bool _isLoading = false;
   bool _isEditMode = false;
@@ -78,6 +83,8 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
     _awayScoreController = TextEditingController(text: scoreParts[1]);
 
     _memoController = TextEditingController(text: widget.match?.memo ?? '');
+    _awayTeamOtherController = TextEditingController();
+    _homeTeamOtherController = TextEditingController();
 
     // ハイライトの初期化
     final highlight = widget.match?.highlight;
@@ -93,6 +100,8 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
     _dateController.dispose();
     _homeScoreController.dispose();
     _awayScoreController.dispose();
+    _awayTeamOtherController.dispose();
+    _homeTeamOtherController.dispose();
     _memoController.dispose();
     _highlightUrlController.dispose();
     _highlightTitleController.dispose();
@@ -111,21 +120,36 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
 
       // HOMEチームの初期値（リストに存在する場合のみ設定）
       String? selectedHomeTeam;
-      if (homeTeam != null && homeTeams.contains(homeTeam)) {
-        selectedHomeTeam = homeTeam;
+      String homeTeamOtherText = '';
+      if (homeTeam != null) {
+        if (homeTeams.contains(homeTeam)) {
+          selectedHomeTeam = homeTeam;
+        } else if (homeTeam.isNotEmpty && homeTeams.contains('その他')) {
+          selectedHomeTeam = 'その他';
+          homeTeamOtherText = homeTeam;
+        }
       }
 
-      // 対戦相手の初期値（リストに存在する場合のみ設定）
+      // 対戦相手の初期値
       String? selectedAwayTeam;
-      if (awayTeam != null && allOpponentTeams.contains(awayTeam)) {
-        selectedAwayTeam = awayTeam;
+      String awayTeamOtherText = '';
+      if (awayTeam != null) {
+        if (allOpponentTeams.contains(awayTeam)) {
+          selectedAwayTeam = awayTeam;
+        } else if (awayTeam.isNotEmpty) {
+          // 定義済みリストにない場合は「その他」として扱い、実際の名前をテキストフィールドに設定
+          selectedAwayTeam = 'その他';
+          awayTeamOtherText = awayTeam;
+        }
       }
 
       setState(() {
         _availableSeasons = seasons;
         _availableHomeTeams = homeTeams;
         _selectedHomeTeam = selectedHomeTeam;
+        _homeTeamOtherController.text = homeTeamOtherText;
         _selectedAwayTeam = selectedAwayTeam;
+        _awayTeamOtherController.text = awayTeamOtherText;
       });
     } catch (e) {
       if (mounted) {
@@ -183,8 +207,17 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
   /// そうでない場合は引数のチームリストから選択できるようにする
   List<String> _getGoalScorerTeamOptions(List<String> availableTeams) {
     if (_selectedHomeTeam != null && _selectedAwayTeam != null) {
-      // 両方選択されている場合はその2つのみ
-      return [_selectedHomeTeam!, _selectedAwayTeam!];
+      final homeTeamDisplay = _isHomeTeamOther
+          ? (_homeTeamOtherController.text.trim().isNotEmpty
+              ? _homeTeamOtherController.text.trim()
+              : 'その他')
+          : _selectedHomeTeam!;
+      final awayTeamDisplay = _isAwayTeamOther
+          ? (_awayTeamOtherController.text.trim().isNotEmpty
+              ? _awayTeamOtherController.text.trim()
+              : 'その他')
+          : _selectedAwayTeam!;
+      return [homeTeamDisplay, awayTeamDisplay];
     }
     return availableTeams;
   }
@@ -312,6 +345,8 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
         return '敗北';
       case MatchOutcome.draw:
         return '引き分け';
+      case MatchOutcome.watch:
+        return '観戦';
       case MatchOutcome.tbd:
         return '未定';
     }
@@ -359,8 +394,12 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
       if (_isEditMode) {
         // 編集モード: 既存の試合を更新
         widget.match!.matchDate = _selectedDate;
-        widget.match!.homeTeam = _selectedHomeTeam ?? '';
-        widget.match!.awayTeam = _selectedAwayTeam ?? '';
+        widget.match!.homeTeam = _isHomeTeamOther
+            ? _homeTeamOtherController.text.trim()
+            : (_selectedHomeTeam ?? '');
+        widget.match!.awayTeam = _isAwayTeamOther
+            ? _awayTeamOtherController.text.trim()
+            : (_selectedAwayTeam ?? '');
         widget.match!.score = score;
         widget.match!.outcome = _selectedOutcome;
         widget.match!.viewingType = _selectedViewingType;
@@ -383,8 +422,12 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
         // 新規登録モード
         final newMatch = MatchResult(
           matchDate: _selectedDate,
-          homeTeam: _selectedHomeTeam ?? '',
-          awayTeam: _selectedAwayTeam ?? '',
+          homeTeam: _isHomeTeamOther
+              ? _homeTeamOtherController.text.trim()
+              : (_selectedHomeTeam ?? ''),
+          awayTeam: _isAwayTeamOther
+              ? _awayTeamOtherController.text.trim()
+              : (_selectedAwayTeam ?? ''),
           score: score,
           outcomeIndex: _selectedOutcome.index,
           viewingTypeIndex: _selectedViewingType.index,
@@ -472,12 +515,6 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
   Widget build(BuildContext context) {
     final settings = AppSettings.of(context);
     final availableAwayTeams = _getAvailableAwayTeams(settings.selectedLeagues);
-
-    // 編集時: 保存済みの対戦相手がフィルタ後のリストに含まれない場合は含めておく
-    final awayTeamsForDropdown = (_selectedAwayTeam != null &&
-            !availableAwayTeams.contains(_selectedAwayTeam))
-        ? ([_selectedAwayTeam!, ...availableAwayTeams]..sort())
-        : availableAwayTeams;
 
     return Scaffold(
       appBar: AppBar(
@@ -572,6 +609,9 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
                   : (value) {
                       setState(() {
                         _selectedHomeTeam = value;
+                        if (value != 'その他') {
+                          _homeTeamOtherController.clear();
+                        }
                       });
                     },
               validator: (value) {
@@ -584,17 +624,34 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
                 return null;
               },
             ),
+            if (_isHomeTeamOther) ...[
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _homeTeamOtherController,
+                decoration: const InputDecoration(
+                  labelText: 'HOMEチーム名を入力',
+                  border: OutlineInputBorder(),
+                  hintText: '例: パリ・サンジェルマンFC、フランス',
+                ),
+                validator: (value) {
+                  if (_isHomeTeamOther && (value == null || value.trim().isEmpty)) {
+                    return 'チーム名を入力してください';
+                  }
+                  return null;
+                },
+              ),
+            ],
             const SizedBox(height: 16),
 
-            // 対戦相手
+            // アウェイチーム
             DropdownButtonFormField<String>(
               initialValue: _selectedAwayTeam,
               decoration: const InputDecoration(
-                labelText: '対戦相手',
+                labelText: 'アウェイチーム',
                 border: OutlineInputBorder(),
                 helperText: '設定画面でリーグを絞り込めます',
               ),
-              items: awayTeamsForDropdown.map((team) {
+              items: availableAwayTeams.map((team) {
                 return DropdownMenuItem(
                   value: team,
                   child: Text(team),
@@ -603,15 +660,36 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
               onChanged: (value) {
                 setState(() {
                   _selectedAwayTeam = value;
+                  if (value != 'その他') {
+                    _awayTeamOtherController.clear();
+                  }
                 });
               },
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return '対戦相手を選択してください';
+                  return 'アウェイチームを選択してください';
                 }
                 return null;
               },
             ),
+            if (_isAwayTeamOther) ...[
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _awayTeamOtherController,
+                decoration: const InputDecoration(
+                  labelText: 'アウェイチーム名を入力',
+                  border: OutlineInputBorder(),
+                  hintText: '例: パリ・サンジェルマンFC、フランス',
+                ),
+                autofocus: true,
+                validator: (value) {
+                  if (_isAwayTeamOther && (value == null || value.trim().isEmpty)) {
+                    return 'チーム名を入力してください';
+                  }
+                  return null;
+                },
+              ),
+            ],
             const SizedBox(height: 16),
 
             // スコア
@@ -659,7 +737,13 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
                 labelText: '勝敗',
                 border: OutlineInputBorder(),
               ),
-              items: MatchOutcome.values.map((outcome) {
+              items: const [
+                MatchOutcome.watch,
+                MatchOutcome.win,
+                MatchOutcome.draw,
+                MatchOutcome.lose,
+                MatchOutcome.tbd,
+              ].map((outcome) {
                 return DropdownMenuItem(
                   value: outcome,
                   child: Text(_getOutcomeLabel(outcome)),
@@ -735,7 +819,7 @@ class _MatchFormScreenState extends State<MatchFormScreen> {
                       }),
                     const SizedBox(height: 8),
                     OutlinedButton.icon(
-                      onPressed: () => _showAddGoalScorerDialog(awayTeamsForDropdown),
+                      onPressed: () => _showAddGoalScorerDialog(availableAwayTeams),
                       icon: const Icon(Icons.add),
                       label: const Text('得点者を追加'),
                       style: OutlinedButton.styleFrom(

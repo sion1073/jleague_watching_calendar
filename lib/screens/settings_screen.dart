@@ -49,8 +49,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// HOMEチーム選択画面を表示
   Future<void> _showHomeTeamSelectionDialog() async {
-    // 全チームリストを作成（全 division）
+    // 全チームリストを作成（全 division + その他）
     final allTeams = allTeamInfoList.map((t) => t.name).toSet().toList()
+      ..add('その他')
       ..sort();
 
     // 一時的な選択状態を保持
