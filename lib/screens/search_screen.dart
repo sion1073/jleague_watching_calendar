@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/season.dart';
 import '../models/match_result.dart';
 import '../services/season_service.dart';
+import '../constants/team_constants.dart';
 import '../widgets/app_layout.dart';
 import 'season_detail_screen.dart';
 import 'league_list_screen.dart';
@@ -95,13 +96,21 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     // HOMEチームフィルター
-    if (_selectedHomeTeam != null && match.homeTeam != _selectedHomeTeam) {
-      return false;
+    if (_selectedHomeTeam != null) {
+      if (_selectedHomeTeam == 'その他') {
+        if (teamInfoByName.containsKey(match.homeTeam)) return false;
+      } else if (match.homeTeam != _selectedHomeTeam) {
+        return false;
+      }
     }
 
     // 対戦相手フィルター
-    if (_selectedAwayTeam != null && match.awayTeam != _selectedAwayTeam) {
-      return false;
+    if (_selectedAwayTeam != null) {
+      if (_selectedAwayTeam == 'その他') {
+        if (teamInfoByName.containsKey(match.awayTeam)) return false;
+      } else if (match.awayTeam != _selectedAwayTeam) {
+        return false;
+      }
     }
 
     // 勝敗フィルター
@@ -120,23 +129,37 @@ class _SearchScreenState extends State<SearchScreen> {
   /// 利用可能なHOMEチームリストを取得
   List<String> _getAvailableHomeTeams() {
     final teams = <String>{};
+    bool hasOther = false;
     for (final season in _seasonService.getAllSeasons()) {
       for (final match in season.matches) {
-        teams.add(match.homeTeam);
+        if (teamInfoByName.containsKey(match.homeTeam)) {
+          teams.add(match.homeTeam);
+        } else if (match.homeTeam.isNotEmpty) {
+          hasOther = true;
+        }
       }
     }
-    return teams.toList()..sort();
+    final sorted = teams.toList()..sort();
+    if (hasOther) sorted.add('その他');
+    return sorted;
   }
 
   /// 利用可能な対戦相手リストを取得
   List<String> _getAvailableAwayTeams() {
     final teams = <String>{};
+    bool hasOther = false;
     for (final season in _seasonService.getAllSeasons()) {
       for (final match in season.matches) {
-        teams.add(match.awayTeam);
+        if (teamInfoByName.containsKey(match.awayTeam)) {
+          teams.add(match.awayTeam);
+        } else if (match.awayTeam.isNotEmpty) {
+          hasOther = true;
+        }
       }
     }
-    return teams.toList()..sort();
+    final sorted = teams.toList()..sort();
+    if (hasOther) sorted.add('その他');
+    return sorted;
   }
 
   /// 試合結果を日本語テキストに変換
