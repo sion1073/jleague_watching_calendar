@@ -24,19 +24,22 @@ class MatchListStatisticsWidget extends StatelessWidget {
 
   /// 試合リストの統計を計算
   Map<String, int> _calculateStatistics() {
-    // 終了した試合のみを対象にする
     final finishedMatches = matches.where((m) => m.isFinished).toList();
 
     int totalMatches = finishedMatches.length;
+    int rankedMatches = finishedMatches.where((m) => m.isCountedInWinRate).length;
     int totalWins = finishedMatches.where((m) => m.outcome == MatchOutcome.win).length;
     int totalLosses = finishedMatches.where((m) => m.outcome == MatchOutcome.lose).length;
     int totalDraws = finishedMatches.where((m) => m.outcome == MatchOutcome.draw).length;
+    int totalWatches = finishedMatches.where((m) => m.outcome == MatchOutcome.watch).length;
 
     return {
       'totalMatches': totalMatches,
+      'rankedMatches': rankedMatches,
       'wins': totalWins,
       'losses': totalLosses,
       'draws': totalDraws,
+      'watches': totalWatches,
     };
   }
 
@@ -44,12 +47,13 @@ class MatchListStatisticsWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final stats = _calculateStatistics();
     final totalMatches = stats['totalMatches'] ?? 0;
+    final rankedMatches = stats['rankedMatches'] ?? 0;
     final wins = stats['wins'] ?? 0;
     final losses = stats['losses'] ?? 0;
     final draws = stats['draws'] ?? 0;
+    final watches = stats['watches'] ?? 0;
 
-    // 勝率を計算（0除算を防ぐ）
-    final winRate = totalMatches > 0 ? (wins / totalMatches * 100) : 0.0;
+    final winRate = rankedMatches > 0 ? (wins / rankedMatches * 100) : 0.0;
 
     return Card(
       margin: const EdgeInsets.all(8.0),
@@ -58,64 +62,30 @@ class MatchListStatisticsWidget extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // タイトル
             Row(
               children: [
-                Icon(
-                  Icons.bar_chart,
-                  color: Theme.of(context).primaryColor,
-                ),
+                Icon(Icons.bar_chart, color: Theme.of(context).primaryColor),
                 const SizedBox(width: 8),
                 Text(
                   title ?? '観戦統計',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const Divider(height: 24),
-            // 統計テーブル
-            _buildStatRow(
-              context,
-              '観戦数',
-              totalMatches.toString(),
-              Colors.blue,
-              Icons.stadium,
-            ),
+            _buildStatRow(context, '総観戦数', totalMatches.toString(), Colors.blue, Icons.stadium),
+            if (watches > 0) ...[
+              const SizedBox(height: 12),
+              _buildStatRow(context, '非統計観戦数', watches.toString(), Colors.blueGrey, Icons.visibility),
+            ],
             const SizedBox(height: 12),
-            _buildStatRow(
-              context,
-              '勝利数',
-              wins.toString(),
-              Colors.green,
-              Icons.check_circle,
-            ),
+            _buildStatRow(context, '勝利数', wins.toString(), Colors.green, Icons.check_circle),
             const SizedBox(height: 12),
-            _buildStatRow(
-              context,
-              '敗戦数',
-              losses.toString(),
-              Colors.red,
-              Icons.cancel,
-            ),
+            _buildStatRow(context, '引き分け数', draws.toString(), Colors.orange, Icons.horizontal_rule),
             const SizedBox(height: 12),
-            _buildStatRow(
-              context,
-              '引き分け数',
-              draws.toString(),
-              Colors.orange,
-              Icons.horizontal_rule,
-            ),
+            _buildStatRow(context, '敗戦数', losses.toString(), Colors.red, Icons.cancel),
             const Divider(height: 24),
-            // 勝率
-            _buildStatRow(
-              context,
-              '勝率',
-              '${winRate.toStringAsFixed(1)}%',
-              Colors.purple,
-              Icons.trending_up,
-            ),
+            _buildStatRow(context, '勝率', '${winRate.toStringAsFixed(1)}%', Colors.purple, Icons.trending_up),
           ],
         ),
       ),

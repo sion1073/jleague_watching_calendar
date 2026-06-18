@@ -148,6 +148,8 @@ class _SearchScreenState extends State<SearchScreen> {
         return '敗北';
       case MatchOutcome.draw:
         return '引き分け';
+      case MatchOutcome.watch:
+        return '観戦';
       case MatchOutcome.tbd:
       default:
         return '予定';
@@ -402,11 +404,11 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // 対戦相手フィルター
+                      // アウェイチームフィルター
                       DropdownButtonFormField<String>(
                         initialValue: _selectedAwayTeam,
                         decoration: const InputDecoration(
-                          labelText: '対戦相手',
+                          labelText: 'アウェイチーム',
                           border: OutlineInputBorder(),
                         ),
                         items: [
@@ -439,7 +441,13 @@ class _SearchScreenState extends State<SearchScreen> {
                             value: null,
                             child: Text('すべて'),
                           ),
-                          ...MatchOutcome.values.map((outcome) => DropdownMenuItem(
+                          ...const [
+                            MatchOutcome.watch,
+                            MatchOutcome.win,
+                            MatchOutcome.draw,
+                            MatchOutcome.lose,
+                            MatchOutcome.tbd,
+                          ].map((outcome) => DropdownMenuItem(
                                 value: outcome,
                                 child: Text(_getResultText(outcome)),
                               )),

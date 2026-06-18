@@ -10,6 +10,7 @@ enum MatchOutcome {
   lose,   // 負け
   draw,   // 引き分け
   tbd,    // 未定（試合前）
+  watch,  // 観戦（中立的に観戦、勝率計算対象外）
 }
 
 /// 観戦タイプ
@@ -130,6 +131,8 @@ class MatchResult extends HiveObject {
         return MatchOutcome.lose.index;
       case 'draw':
         return MatchOutcome.draw.index;
+      case 'watch':
+        return MatchOutcome.watch.index;
       default:
         return MatchOutcome.tbd.index;
     }
@@ -150,6 +153,9 @@ class MatchResult extends HiveObject {
 
   /// 試合が終了しているかどうか
   bool get isFinished => outcome != MatchOutcome.tbd;
+
+  /// 勝率計算に含めるかどうか（観戦は除外）
+  bool get isCountedInWinRate => isFinished && outcome != MatchOutcome.watch;
 
   /// ホームチームが勝ったかどうか
   bool get isHomeWin => outcome == MatchOutcome.win;

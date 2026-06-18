@@ -38,6 +38,8 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen> {
         return '敗北';
       case MatchOutcome.draw:
         return '引き分け';
+      case MatchOutcome.watch:
+        return '観戦';
       case MatchOutcome.tbd:
       default:
         return '予定';
@@ -53,6 +55,8 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen> {
         return Colors.red;
       case MatchOutcome.draw:
         return Colors.orange;
+      case MatchOutcome.watch:
+        return Colors.blue;
       case MatchOutcome.tbd:
       default:
         return Colors.grey;
@@ -470,6 +474,8 @@ class _SeasonDetailScreenState extends State<SeasonDetailScreen> {
         return Icons.cancel;
       case MatchOutcome.draw:
         return Icons.horizontal_rule;
+      case MatchOutcome.watch:
+        return Icons.visibility;
       case MatchOutcome.tbd:
       default:
         return Icons.schedule;

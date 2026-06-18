@@ -21,26 +21,32 @@ class MatchStatisticsWidget extends StatelessWidget {
   /// 全シーズンの統計を計算（観戦タイプでフィルタリング）
   Map<String, int> _calculateTotalStatistics() {
     int totalMatches = 0;
+    int rankedMatches = 0;
     int totalWins = 0;
     int totalLosses = 0;
     int totalDraws = 0;
+    int totalWatches = 0;
 
     for (final season in seasons) {
       for (final match in season.matches) {
-        // 配信視聴を含める設定がONの場合はすべてカウント
-        // OFFの場合はスタジアム観戦のみカウント
         if (includeStreaming || match.viewingType == ViewingType.stadium) {
           if (match.isFinished) {
             totalMatches++;
             switch (match.outcome) {
               case MatchOutcome.win:
+                rankedMatches++;
                 totalWins++;
                 break;
               case MatchOutcome.lose:
+                rankedMatches++;
                 totalLosses++;
                 break;
               case MatchOutcome.draw:
+                rankedMatches++;
                 totalDraws++;
+                break;
+              case MatchOutcome.watch:
+                totalWatches++;
                 break;
               default:
                 break;
@@ -52,9 +58,11 @@ class MatchStatisticsWidget extends StatelessWidget {
 
     return {
       'totalMatches': totalMatches,
+      'rankedMatches': rankedMatches,
       'wins': totalWins,
       'losses': totalLosses,
       'draws': totalDraws,
+      'watches': totalWatches,
     };
   }
 
@@ -62,12 +70,13 @@ class MatchStatisticsWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final stats = _calculateTotalStatistics();
     final totalMatches = stats['totalMatches'] ?? 0;
+    final rankedMatches = stats['rankedMatches'] ?? 0;
     final wins = stats['wins'] ?? 0;
     final losses = stats['losses'] ?? 0;
     final draws = stats['draws'] ?? 0;
+    final watches = stats['watches'] ?? 0;
 
-    // 勝率を計算（0除算を防ぐ）
-    final winRate = totalMatches > 0 ? (wins / totalMatches * 100) : 0.0;
+    final winRate = rankedMatches > 0 ? (wins / rankedMatches * 100) : 0.0;
 
     return Card(
       margin: const EdgeInsets.all(8.0),
@@ -76,64 +85,30 @@ class MatchStatisticsWidget extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // タイトル
             Row(
               children: [
-                Icon(
-                  Icons.bar_chart,
-                  color: Theme.of(context).primaryColor,
-                ),
+                Icon(Icons.bar_chart, color: Theme.of(context).primaryColor),
                 const SizedBox(width: 8),
                 Text(
                   '観戦統計',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const Divider(height: 24),
-            // 統計テーブル
-            _buildStatRow(
-              context,
-              '観戦数',
-              totalMatches.toString(),
-              Colors.blue,
-              Icons.stadium,
-            ),
+            _buildStatRow(context, '総観戦数', totalMatches.toString(), Colors.blue, Icons.stadium),
+            if (watches > 0) ...[
+              const SizedBox(height: 12),
+              _buildStatRow(context, '非統計観戦数', watches.toString(), Colors.blueGrey, Icons.visibility),
+            ],
             const SizedBox(height: 12),
-            _buildStatRow(
-              context,
-              '勝利数',
-              wins.toString(),
-              Colors.green,
-              Icons.check_circle,
-            ),
+            _buildStatRow(context, '勝利数', wins.toString(), Colors.green, Icons.check_circle),
             const SizedBox(height: 12),
-            _buildStatRow(
-              context,
-              '敗戦数',
-              losses.toString(),
-              Colors.red,
-              Icons.cancel,
-            ),
+            _buildStatRow(context, '引き分け数', draws.toString(), Colors.orange, Icons.horizontal_rule),
             const SizedBox(height: 12),
-            _buildStatRow(
-              context,
-              '引き分け数',
-              draws.toString(),
-              Colors.orange,
-              Icons.horizontal_rule,
-            ),
+            _buildStatRow(context, '敗戦数', losses.toString(), Colors.red, Icons.cancel),
             const Divider(height: 24),
-            // 勝率
-            _buildStatRow(
-              context,
-              '勝率',
-              '${winRate.toStringAsFixed(1)}%',
-              Colors.purple,
-              Icons.trending_up,
-            ),
+            _buildStatRow(context, '勝率', '${winRate.toStringAsFixed(1)}%', Colors.purple, Icons.trending_up),
           ],
         ),
       ),
