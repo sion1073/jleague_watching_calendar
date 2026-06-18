@@ -159,7 +159,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final settings = AppSettings.of(context);
-    final isJapanNationalTeam = widget.teamName == '日本代表';
+    final isJapanNationalTeam = widget.teamName == '日本';
 
     // 観戦タイプでフィルタリングしてソート
     final matches = _allMatches.where((m) {

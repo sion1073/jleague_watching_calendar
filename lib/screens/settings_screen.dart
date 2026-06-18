@@ -295,7 +295,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Text(
                     'HOMEチームは試合登録時に選択できる応援チームです。\n'
-                    'J1, J2, J3, 日本代表の中から選択できます。\n'
+                    'J1, J2, J3, 日本の中から選択できます。\n'
                     '対戦相手のリーグを絞り込むと、予定登録時の選択肢が絞られます。',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.grey.shade600,

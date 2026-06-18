@@ -6,6 +6,7 @@ import '../models/season.dart';
 import '../models/match_result.dart';
 import '../widgets/app_layout.dart';
 import '../widgets/team_emblem_widget.dart';
+import '../constants/team_constants.dart';
 import 'season_detail_screen.dart';
 import 'season_form_screen.dart';
 import 'team_detail_screen.dart';
@@ -241,7 +242,9 @@ class _LeagueListScreenState extends State<LeagueListScreen> {
         // 配信視聴を含める設定がONの場合はすべてカウント
         // OFFの場合はスタジアム観戦のみカウント
         if (includeStreaming || match.viewingType == ViewingType.stadium) {
-          teamMatchCounts[match.homeTeam] = (teamMatchCounts[match.homeTeam] ?? 0) + 1;
+          if (teamInfoByName.containsKey(match.homeTeam)) {
+            teamMatchCounts[match.homeTeam] = (teamMatchCounts[match.homeTeam] ?? 0) + 1;
+          }
         }
       }
     }

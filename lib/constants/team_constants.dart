@@ -21,9 +21,9 @@ class TeamInfo {
 /// Jリーグクラブは 'assets/emblems/jleague/[filename].png'、
 /// 日本代表は 'assets/emblems/national/[filename].png' 形式で指定してください。
 const List<TeamInfo> allTeamInfoList = [
-  // 日本代表
+  // 日本
   TeamInfo(
-    name: '日本代表',
+    name: '日本',
     division: 'national',
     emblemAssetPath: null, // 例: 'assets/emblems/national/japan.png'
   ),
