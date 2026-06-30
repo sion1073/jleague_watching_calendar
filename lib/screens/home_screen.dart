@@ -152,6 +152,8 @@ class _HomeScreenState extends State<HomeScreen> {
         return '敗北';
       case 'draw':
         return '引き分け';
+      case 'watch':
+        return '観戦';
       default:
         return '未定';
     }
