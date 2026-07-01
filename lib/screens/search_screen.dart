@@ -23,6 +23,8 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final _seasonService = SeasonService();
   final _keywordController = TextEditingController();
+  final _homeOtherController = TextEditingController();
+  final _awayOtherController = TextEditingController();
 
   // フィルター条件
   String? _selectedSeasonKey;
@@ -44,6 +46,8 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void dispose() {
     _keywordController.dispose();
+    _homeOtherController.dispose();
+    _awayOtherController.dispose();
     super.dispose();
   }
 
@@ -99,6 +103,8 @@ class _SearchScreenState extends State<SearchScreen> {
     if (_selectedHomeTeam != null) {
       if (_selectedHomeTeam == 'その他') {
         if (teamInfoByName.containsKey(match.homeTeam)) return false;
+        final q = _homeOtherController.text.trim();
+        if (q.isNotEmpty && !match.homeTeam.toLowerCase().contains(q.toLowerCase())) return false;
       } else if (match.homeTeam != _selectedHomeTeam) {
         return false;
       }
@@ -108,6 +114,8 @@ class _SearchScreenState extends State<SearchScreen> {
     if (_selectedAwayTeam != null) {
       if (_selectedAwayTeam == 'その他') {
         if (teamInfoByName.containsKey(match.awayTeam)) return false;
+        final q = _awayOtherController.text.trim();
+        if (q.isNotEmpty && !match.awayTeam.toLowerCase().contains(q.toLowerCase())) return false;
       } else if (match.awayTeam != _selectedAwayTeam) {
         return false;
       }
@@ -224,12 +232,18 @@ class _SearchScreenState extends State<SearchScreen> {
 
     // HOMEチーム
     if (_selectedHomeTeam != null) {
-      conditions.add('HOME: $_selectedHomeTeam');
+      final q = _selectedHomeTeam == 'その他' && _homeOtherController.text.trim().isNotEmpty
+          ? 'その他(${_homeOtherController.text.trim()})'
+          : _selectedHomeTeam!;
+      conditions.add('HOME: $q');
     }
 
     // 対戦相手
     if (_selectedAwayTeam != null) {
-      conditions.add('vs $_selectedAwayTeam');
+      final q = _selectedAwayTeam == 'その他' && _awayOtherController.text.trim().isNotEmpty
+          ? 'その他(${_awayOtherController.text.trim()})'
+          : _selectedAwayTeam!;
+      conditions.add('vs $q');
     }
 
     // 勝敗
@@ -422,9 +436,24 @@ class _SearchScreenState extends State<SearchScreen> {
                         onChanged: (value) {
                           setState(() {
                             _selectedHomeTeam = value;
+                            if (value != 'その他') _homeOtherController.clear();
                           });
                         },
                       ),
+                      if (_selectedHomeTeam == 'その他') ...[
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _homeOtherController,
+                          decoration: const InputDecoration(
+                            labelText: 'HOMEチーム名（部分一致）',
+                            hintText: 'チーム名の一部を入力',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.search),
+                          ),
+                          onSubmitted: (_) => _performSearch(),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ],
                       const SizedBox(height: 12),
 
                       // アウェイチームフィルター
@@ -447,9 +476,24 @@ class _SearchScreenState extends State<SearchScreen> {
                         onChanged: (value) {
                           setState(() {
                             _selectedAwayTeam = value;
+                            if (value != 'その他') _awayOtherController.clear();
                           });
                         },
                       ),
+                      if (_selectedAwayTeam == 'その他') ...[
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _awayOtherController,
+                          decoration: const InputDecoration(
+                            labelText: 'アウェイチーム名（部分一致）',
+                            hintText: 'チーム名の一部を入力',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.search),
+                          ),
+                          onSubmitted: (_) => _performSearch(),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ],
                       const SizedBox(height: 12),
 
                       // 勝敗フィルター
